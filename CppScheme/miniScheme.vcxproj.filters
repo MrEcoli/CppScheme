@@ -21,13 +21,13 @@
     <ClInclude Include="ExpAST.h">
       <Filter>源文件</Filter>
     </ClInclude>
-    <ClInclude Include="lexer.h">
-      <Filter>源文件</Filter>
-    </ClInclude>
     <ClInclude Include="parser.h">
       <Filter>源文件</Filter>
     </ClInclude>
     <ClInclude Include="slist.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
+    <ClInclude Include="lexer.h">
       <Filter>源文件</Filter>
     </ClInclude>
   </ItemGroup>

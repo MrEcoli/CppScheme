@@ -110,7 +110,7 @@ static TOKEN get_token(std::istream &input){
 			std::string tmp;
 			int dot_number = 0;
 			bool isNumber = true;
-			while (!isspace(cur_char) && cur_char != '(' && cur_char != ')' && cur_char != ';' && cur_char != '#') {
+			while (!isspace(cur_char) && cur_char != '(' && cur_char != ')' && cur_char != ';' && cur_char != '#' && cur_char != EOF) {
 				if (cur_char == '.'){
 					++dot_number;
 				}
@@ -143,16 +143,21 @@ static TOKEN get_token(std::istream &input){
 			}
 		}
 		default:
-			if (isalpha(cur_char) || cur_char == '_'){
+			//identifier类型
+			//可能以字母，加减乘除小于小于等于号起始
+
+			if (is_identifier_char(cur_char) || cur_char == '_'){
 				std::string tmp(1, cur_char);
 				cur_char = input.get();
-				while (!isspace(cur_char) && cur_char != '(' && cur_char != ')' && cur_char != ';') {					tmp += cur_char;					cur_char = input.get();
+				while (!isspace(cur_char) && cur_char != '(' && cur_char != ')' && cur_char != ';' && cur_char != EOF) {					tmp += cur_char;					cur_char = input.get();
 				}
 				current_identifer = tmp;
-
+				DEBUG_STDOUT_TOKEN(tmp);
 				return TOKEN::IDENTIFIER;
 			}
 			else
+				DEBUG_STDOUT_TOKEN(cur_char); 
+				cur_char = input.get();
 				return TOKEN::UNKNOWN;
 		}
 

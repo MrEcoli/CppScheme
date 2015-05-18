@@ -22,14 +22,6 @@ void printCurrentEnv(EnvTreeList& env){
 	}
 }
 
-void init_env(EnvTree* gloabl){
-
-
-
-
-
-}
-
 
 int main(){
 

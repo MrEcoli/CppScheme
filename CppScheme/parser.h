@@ -9,6 +9,20 @@
 #include <iostream>
 
 using namespace MiniScheme;
+//Scheme的范式比较简单，包括
+// number				常量数值·1
+// variable				对象,可以是变量或是过程
+// if else expr			条件语句
+// (define x expr)		定义语句，注册一个对象到当前环境
+// (proc arg ... )		过程调用语句
+
+//延伸出来的一些语法包括
+//(lambda (arg ...)	(expr）					定义一个匿名函数
+//(let ((v1 exp1) (v2 exp2) ...) (expr..)	定义一个匿名函数过程，并且立刻调用
+//(cond (c1 r1) (c2 r2) ... (else rx))		条件语句
+/
+
+
 
 typedef std::map<std::string, Object*> EnvTree;
 typedef slist<EnvTree> EnvTreeList;
