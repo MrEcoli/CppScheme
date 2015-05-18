@@ -1,0 +1,13 @@
+﻿生成启动时间为 2015/5/16 20:31:28。
+     1>项目“E:\BaiduDisk\Code\Compiler\PGWT\CppScheme\miniScheme\miniScheme.vcxproj”在节点 2 上(Build 个目标)。
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D _MBCS /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt miniScheme.cpp
+         miniScheme.cpp
+     1>e:\baidudisk\code\compiler\pgwt\cppscheme\minischeme\parser.h(30): error C2872: “DOUBLE”: 不明确的符号
+                 可能是“e:\baidudisk\code\compiler\pgwt\cppscheme\minischeme\lexer.h(24) : TOKEN DOUBLE”
+                 或       “e:\baidudisk\code\compiler\pgwt\cppscheme\minischeme\object.h(13) : MiniScheme::ObjectType DOUBLE”
+     1>已完成生成项目“E:\BaiduDisk\Code\Compiler\PGWT\CppScheme\miniScheme\miniScheme.vcxproj”(Build 个目标)的操作 - 失败。
+
+生成失败。
+
+已用时间 00:00:00.47
