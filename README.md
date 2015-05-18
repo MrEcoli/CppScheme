@@ -5,7 +5,7 @@ In Process
 
 
 
-## Scheme的范式
+###Scheme的范式
 
 Scheme的范式比较简单，主要的范式包括
 
@@ -29,7 +29,8 @@ variable|对象，可以是变量或过程
 
 
 
-##CppScheme基本的语言特性
+----------
+###CppScheme基本的语言特性
 
 CppScheme支持的语言特性
 ####1. 支持define命令，变量将加入全局变量中
@@ -83,7 +84,7 @@ cond语句依次判定条件，正确则执行判断语句对应的表达式，�
 ----------
 
 
-##代码清单
+###代码清单
 
 ####1. Parser.h
 包含了TOKEN类型，词法分析函数，可以通过**DEBUG_TOKEN**开启TOKEN分析结果提示
