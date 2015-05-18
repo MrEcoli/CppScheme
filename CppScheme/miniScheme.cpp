@@ -72,13 +72,13 @@ int main(){
 
 
 //get_token function test
-/*std::ifstream inputfile;
+	std::ifstream inputfile;
 	#define DEBUG_TOKEN
 	inputfile.open("E:\\BaiduDisk\\Code\\Compiler\\PGWT\\CppScheme\\miniScheme\\intput.mscm");
 	cur_char = inputfile.get();
 	while (cur_char != EOF) {
 	get_token(inputfile);
-	}*/
+	}
 
 	cin.get();
 

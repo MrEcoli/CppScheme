@@ -55,7 +55,7 @@ namespace MiniScheme{
 		}
 
 		slist(const self& others){
-			this->head = others->head;
+			this->head = others.head;
 		}
 
 		slist(node_ptr cur_node) :head(cur_node){}

@@ -16,12 +16,15 @@ typedef slist<EnvTree> EnvTreeList;
 static EnvTreeList Env;
 static EnvTree* GlobalVariable;
 
+ExpAST* parseExpAst(std::istream& in, EnvTreeList &current_env, int left );
 
 ExpAST* parseIFElseAST(std::istream& in, EnvTreeList current_env);
 
 void parseArgs(std::istream& in, std::vector< std::string > &args);
 
 ExpAST* parseCondExp(std::istream& in, EnvTreeList current_env);
+
+bool parseCondExp(std::istream& in, EnvTreeList current_env, std::vector<ExpAST*> &conds, std::vector<ExpAST*> &rets);
 
 ExpAST* parseCallExp(std::istream& in, EnvTreeList current_env);
 
@@ -33,6 +36,55 @@ ExpAST* parseLetExp(std::istream& in, EnvTreeList current_env);
 
 void parseLetArgs(std::istream& in, EnvTreeList current_env, std::vector<std::string>& args, std::vector<ExpAST*>& parameters);
 
+
+
+//Ω‚Œˆ”Ô∑®
+ExpAST* parseExpAst(std::istream& in, EnvTreeList &current_env, int left = 0){
+	while (left == 0){
+		TOKEN _tok = get_token(in);
+		switch (_tok)
+		{
+		case TOKEN::INTEGER:
+			return new SimpleExp(new IntegerValue(current_int));
+		case TOKEN::DOUBLE:
+			return new SimpleExp(new DoubleValue(current_double));
+		case TOKEN::IDENTIFIER:
+			return new VariableExp(current_identifer);
+		case TOKEN::LBRACE:
+			return parseExpAst(in, current_env, 1);
+		case TOKEN::RBRACE:
+			return nullptr;
+		case TOKEN::ELSE:
+			return nullptr;
+		default:
+			std::cerr << "unknown token" << current_line_number << std::endl;
+			break;
+		}
+	}
+
+	if (left == 1){
+		TOKEN _tok = get_token(in);
+		switch (_tok)
+		{
+		case TOKEN::DEFINE:
+			return parseDefineExp(in, current_env);
+		case TOKEN::IF:
+			return parseIFElseAST(in, current_env);
+		case TOKEN::IDENTIFIER:
+			return parseCallExp(in, current_env);
+		case TOKEN::LAMBDA:
+			return parseLambdaExp(in, current_env);
+		case TOKEN::RBRACE:
+			return nullptr;
+		case TOKEN::COND:
+			return parseCondExp(in, current_env);
+		case TOKEN::LET:
+			return parseLetExp(in, current_env);
+
+		}
+
+	}
+}
 
 
 void parseBegin(std::istream& in){
@@ -141,61 +193,6 @@ void parseArgs(std::istream& in, std::vector < std::string > &args){	//ππΩ®≤Œ ˝¡
 }
 
 
-//Ω‚Œˆ”Ô∑®
-ExpAST* parseExpAst(std::istream& in, EnvTreeList &current_env, int left = 0){
-	while (left == 0){
-		TOKEN _tok = get_token(in);
-		switch (_tok)
-		{
-		case TOKEN::INTEGER:
-			return new SimpleExp(new IntegerValue(current_int));
-		case TOKEN::DOUBLE:
-			return new SimpleExp(new DoubleValue(current_double));
-		case TOKEN::IDENTIFIER:
-			return new VariableExp(current_identifer);
-		case TOKEN::LBRACE:
-			return parseExpAst(in, current_env, 1);
-		case TOKEN::RBRACE:
-			return nullptr;
-		case TOKEN::ELSE:
-			return nullptr;
-		default:
-			std::cerr << "unknown token" << current_line_number << std::endl;
-			break;
-		}
-	}
-
-	if (left == 1){
-		TOKEN _tok = get_token(in);
-		switch (_tok)
-		{
-		case TOKEN::DEFINE:
-			return parseDefineExp(in, current_env);
-		case TOKEN::IF:
-			return parserIFElseAST(in, current_env);
-
-		case TOKEN::ADD:
-		case TOKEN::SUB:
-		case TOKEN::DIV:
-		case TOKEN::MUL:
-		case TOKEN::GREATER:
-		case TOKEN::LESS:
-		case TOKEN::EQUAL:
-		case TOKEN::IDENTIFIER:
-			return parseCallExp(in, current_env);
-		case TOKEN::LAMBDA:
-			return parseLambdaExp(in, current_env);
-		case TOKEN::RBRACE:
-			return nullptr;
-		case TOKEN::COND:
-			return parseCondExp(in, current_env);
-		case TOKEN::LET:
-			return parseLetExp(in, current_env);
-
-		}
-
-	}
-}
 
 ExpAST* parseLambdaExp(std::istream& in, EnvTreeList current_env){
 	TOKEN _tok = get_token(in);
@@ -226,7 +223,7 @@ ExpAST* parseLambdaExp(std::istream& in, EnvTreeList current_env){
 
 
 
-ExpAST* parserIFElseAST(std::istream& in, EnvTreeList current_env){
+ExpAST* parseIFElseAST(std::istream& in, EnvTreeList current_env){
 
 	IfelseExp* result = new IfelseExp();
 
@@ -327,7 +324,7 @@ ExpAST* parseLetExp(std::istream& in, EnvTreeList current_env){
 	//    function start    aguments parse start                    aguments parse end           eat the last brace;
 
 	CallProcedureExp* result = new CallProcedureExp();
-	Procedure* proc = new Procedure();
+	ProcedureExp* proc = new ProcedureExp();
 
 	parseLetArgs(in, current_env, proc->args, result->parameters);
 	

@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 #include "Object.h"
+#include <map>
+#include "slist.h"
 
 namespace MiniScheme{
 
@@ -42,6 +44,8 @@ namespace MiniScheme{
 		VariableExp(std::string _name ) :var_name(_name){}
 		Object* eval(EnvTreeList) override;
 	};
+
+	
 
 
 
@@ -150,6 +154,7 @@ namespace MiniScheme{
 			}
 
 			Object* ret = proc->expr->eval(local_env);
+			return ret;
 		}
 		else{
 			std::cerr << "invalid procedure call" << std::endl;
@@ -160,10 +165,12 @@ namespace MiniScheme{
 	Object* DefineExp::eval(EnvTreeList env){
 		Object* ret = this->expr->eval(env);
 
-		(*env->head->ptr_to_data)[this->name] = ret;
+		(*env.head->ptr_to_data)[this->name] = ret;
 
 		return next->eval(env);
 	}
+
+
 
 
 }
