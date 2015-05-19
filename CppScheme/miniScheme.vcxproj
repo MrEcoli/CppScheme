@@ -65,6 +65,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="build_in.h" />
     <ClInclude Include="ExpAST.h" />
     <ClInclude Include="lexer.h" />
     <ClInclude Include="Object.h" />

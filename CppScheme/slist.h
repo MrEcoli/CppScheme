@@ -1,6 +1,12 @@
 #ifndef _MINISCHEME_SLIST_H
 #define _MINISCHEME_SLIST_H
 
+
+//定义了一个单链表，用以模拟函数调用时的环境变量查找
+//当前节点为当前的局部环境，而下一个节点则为调用过程的环境
+//https://github.com/MrEcoli/CppScheme/blob/master/Data/Enviroment.jpg
+
+
 namespace MiniScheme{
 
 	template<typename T>
@@ -49,7 +55,7 @@ namespace MiniScheme{
 		node_ptr head;
 		slist() :head(nullptr){};
 
-		self& operator=(const self& others){
+		self operator=(const self& others){
 			this->head = others.head;
 			return *this;
 		}

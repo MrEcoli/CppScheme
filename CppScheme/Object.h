@@ -12,6 +12,7 @@ namespace MiniScheme{
 		INTEGEROBJ,
 		DOUBLEOBJ,
 		BOOLOBJ,
+		PAIROBJ,
 	};
 
 	class Object{
@@ -57,8 +58,20 @@ namespace MiniScheme{
 		Procedure() :Object(ObjectType::PROCEDURE){}
 	};
 
-	class Boolean :public Object{
-		bool vale;
+	class BoolValue :public Object{
+	public:
+		bool value;
+		BoolValue() :Object(ObjectType::BOOLOBJ){}
+		BoolValue(bool _bb) :value(_bb), Object(ObjectType::BOOLOBJ){}
+	};
+
+
+	class Pair :public Object{
+	public:
+		Object *cur;
+		Object *next;
+		Pair() :Object(ObjectType::PAIROBJ), cur(nullptr), next(nullptr){}
+		Pair(Object* _x, Object* _y) :cur(_x), next(_y), Object(ObjectType::PAIROBJ){}
 	};
 }
 

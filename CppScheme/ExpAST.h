@@ -10,6 +10,8 @@
 
 namespace MiniScheme{
 
+
+	//抽象AST的基类
 	class ExpAST{
 	public:
 		typedef std::map<std::string, Object*> EnvTree;
@@ -45,9 +47,6 @@ namespace MiniScheme{
 		Object* eval(EnvTreeList) override;
 	};
 
-	
-
-
 
 	//调用过程的表达式
 	//如果有名字，则以name进行调用，这个procedure应该是在此处可以访问
@@ -82,16 +81,8 @@ namespace MiniScheme{
 	};
 
 
-	//need??
-	class FunctionProto{
-	public:
-		std::string func_name;
-		std::vector<std::string> args;
-		ExpAST* expr;
-	};
-
-
 	//represent the lamda expression
+	//eval生成一个Procedure Object
 	class ProcedureExp :public ExpAST{
 	public:
 		std::vector<std::string> args;
@@ -99,7 +90,7 @@ namespace MiniScheme{
 		Object* eval(EnvTreeList) override;
 	};
 
-
+	//表示cond起始的条件语句
 	class CondExp :public ExpAST{
 	public:
 		std::vector<ExpAST*> conds;
@@ -107,14 +98,7 @@ namespace MiniScheme{
 		Object* eval(EnvTreeList) override;
 	};
 
-
-	class LetExp :public ExpAST{
-	public:
-		
-	};
-
-
-
+	
 	Object* VariableExp::eval(EnvTreeList local_env){
 		auto cur_env = local_env.head;
 
@@ -132,19 +116,24 @@ namespace MiniScheme{
 		return nullptr;
 	}
 
-
+	
 	Object* CallProcedureExp::eval(EnvTreeList env){
-		
+				
+
+		if (VariableExp* var = dynamic_cast<VariableExp*>(func)){
+			
+		}
 		if (Procedure* proc = dynamic_cast<Procedure*>(func->eval (env))){
+			
+			if (proc->args.size () != parameters.size ()){
+				std::cerr << "invalid procedure call, incompatible aguments number, expect aguments number" << proc->args.size() << ", give paramenters " << parameters.size() << std::endl;
+				return nullptr;
+			}
 
 			//构建局部变量环境
 			EnvTree* localvariable = new EnvTree();
 			EnvTreeList local_env = env.push_front(localvariable);
 
-			if (proc->args.size () != parameters.size ()){
-				std::cerr << "invalid procedure call, incompatible aguments number, expect aguments number" << proc->args.size() << ", give paramenters " << parameters.size() << std::endl;
-				return nullptr;
-			}
 			
 			size_t args_number = parameters.size();
 
@@ -154,6 +143,8 @@ namespace MiniScheme{
 			}
 
 			Object* ret = proc->expr->eval(local_env);
+			
+			local_env.clearLocal();
 			return ret;
 		}
 		else{
@@ -170,6 +161,88 @@ namespace MiniScheme{
 		return next->eval(env);
 	}
 
+	Object* IfelseExp::eval(EnvTreeList env){
+
+		bool res = true;
+
+		if (!eval_boolean (this->ifexp, res, env)){
+			std::cerr << "invalid condition expression" << std::endl;
+			return nullptr;
+		}
+
+		if (res){
+			return this->thenexp->eval(env);
+		}
+		else{
+			return this->elseexp->eval(env);
+		}
+
+	}
+
+	Object* CondExp::eval(EnvTreeList env){
+
+		size_t n = conds.size();
+		size_t m = rets.size();
+		if (n != m || n == 0){
+			std::cerr << "Invalid CondExp conditons" << std::endl;
+			return nullptr;
+		}
+
+		bool condBool = true;
+		for (size_t idx = 0; idx != n - 1; ++idx) {
+			if (eval_boolean(conds[idx], condBool, env)){
+				if (condBool){
+					return rets[idx]->eval(env);
+				}
+			}
+			else{
+				std::cerr << "Invalid Cond Expression " << std::endl;
+				return nullptr;
+			}
+		}
+		return rets.back()->eval(env);
+	}
+
+
+	//将表达式结果获得的Object*转换为布尔值
+	static bool eval_boolean(ExpAST* ifexp, bool& res, EnvTreeList env){
+
+		Object* cond = ifexp->eval(env);
+
+		if (!cond){
+			std::cerr << "invalid condition expression" << std::endl;
+			return false;
+		}
+
+		bool condBool = true;
+		
+
+		if (BoolValue* ptr = dynamic_cast<BoolValue*>(cond)){
+			if (!ptr->value){
+				res = false;
+			}
+		}
+		else if (IntegerValue* ptr = dynamic_cast<IntegerValue*>(cond)){
+			if (ptr->value == 0){
+				res = false;
+			}
+		}
+		else if (DoubleValue* ptr = dynamic_cast<DoubleValue*>(cond)){
+			if (ptr->value == 0){
+				res = false;
+			}
+		}
+		else if (Procedure* ptr = dynamic_cast<Procedure*>(cond)){
+			res = true;
+		}
+		else{
+			return false;
+		}
+
+		return true;
+
+	}
+	
 
 
 

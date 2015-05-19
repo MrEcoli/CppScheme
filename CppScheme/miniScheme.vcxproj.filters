@@ -30,6 +30,9 @@
     <ClInclude Include="lexer.h">
       <Filter>源文件</Filter>
     </ClInclude>
+    <ClInclude Include="build_in.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="miniScheme.cpp">

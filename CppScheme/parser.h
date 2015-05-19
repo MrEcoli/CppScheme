@@ -20,9 +20,6 @@ using namespace MiniScheme;
 //(lambda (arg ...)	(expr）					定义一个匿名函数
 //(let ((v1 exp1) (v2 exp2) ...) (expr..)	定义一个匿名函数过程，并且立刻调用
 //(cond (c1 r1) (c2 r2) ... (else rx))		条件语句
-/
-
-
 
 typedef std::map<std::string, Object*> EnvTree;
 typedef slist<EnvTree> EnvTreeList;
@@ -30,7 +27,7 @@ typedef slist<EnvTree> EnvTreeList;
 static EnvTreeList Env;
 static EnvTree* GlobalVariable;
 
-ExpAST* parseExpAst(std::istream& in, EnvTreeList &current_env, int left );
+ExpAST* parseExpAst(std::istream& in, EnvTreeList current_env, int left);
 
 ExpAST* parseIFElseAST(std::istream& in, EnvTreeList current_env);
 
@@ -52,9 +49,12 @@ void parseLetArgs(std::istream& in, EnvTreeList current_env, std::vector<std::st
 
 
 
+
+
+
 //解析语法
-ExpAST* parseExpAst(std::istream& in, EnvTreeList &current_env, int left = 0){
-	while (left == 0){
+ExpAST* parseExpAst(std::istream& in, EnvTreeList current_env, int left = 0){
+	if (left == 0){
 		TOKEN _tok = get_token(in);
 		switch (_tok)
 		{
@@ -72,11 +72,10 @@ ExpAST* parseExpAst(std::istream& in, EnvTreeList &current_env, int left = 0){
 			return nullptr;
 		default:
 			std::cerr << "unknown token" << current_line_number << std::endl;
-			break;
+			return nullptr;
 		}
 	}
-
-	if (left == 1){
+	else {
 		TOKEN _tok = get_token(in);
 		switch (_tok)
 		{
@@ -88,19 +87,23 @@ ExpAST* parseExpAst(std::istream& in, EnvTreeList &current_env, int left = 0){
 			return parseCallExp(in, current_env);
 		case TOKEN::LAMBDA:
 			return parseLambdaExp(in, current_env);
-		case TOKEN::RBRACE:
-			return nullptr;
 		case TOKEN::COND:
 			return parseCondExp(in, current_env);
 		case TOKEN::LET:
 			return parseLetExp(in, current_env);
-
+		case TOKEN::DOUBLE:
+		case TOKEN::INTEGER:
+			std::cerr << "Uncallable with Number " << current_line_number << std::endl;
+			return nullptr;
+		default:
+			std::cerr << "Uncallable " << current_line_number << std::endl;
+			return nullptr;
 		}
-
 	}
 }
 
 
+/*
 void parseBegin(std::istream& in){
 	while (1){
 		TOKEN cur_token = get_token(in);
@@ -150,6 +153,11 @@ void parseBegin(std::istream& in){
 		}
 	}
 }
+*/
+
+
+
+
 
 ExpAST* parseDefineExp(std::istream& in, EnvTreeList current_env){
 	//		(define   (func args...) (expr ... ... ) )
