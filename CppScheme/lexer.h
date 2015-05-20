@@ -8,8 +8,8 @@
 
 #ifdef DEBUG_TOKEN
 #include <iostream>
-#define DEBUG_STDERR_TOKEN_TOKEN(x) (std::cerr <<"current TOKEN is " << (x) << "\n");
-#define DEBUG_STDOUT_TOKEN(x) (std::cout <<"current TOKEN is " << (x) << "\n");
+#define DEBUG_STDERR_TOKEN_TOKEN(x, y) (std::cerr <<"current TOKEN is " << (x) << " "<< y<< "\n");
+#define DEBUG_STDOUT_TOKEN(x, y) (std::cout <<"current TOKEN is " << (x) << " "<< y<< "\n");
 #include <iosfwd>
 //... etc
 #else 
@@ -65,9 +65,22 @@ static bool is_identifier_char(char ch){
 	return isalpha(ch) || ch == '_' || ch == '+' || ch == '-' || ch == '*' || ch == '/' || ch == '<' || ch == '>' || ch == '=' || ch == '!' || ch == '&' || ch == '*' || ch == '^';
 }
 
+bool push_token = false;
+TOKEN token_pushed;
 
+void push(TOKEN _tok){
+	if (push_token == false){
+		push_token = true;
+		token_pushed = _tok;
+	}
+}
 
 static TOKEN get_token(std::istream &input){
+	if (push_token){
+		push_token = false;
+		return token_pushed;
+	}
+
 	while (1){
 		//重构，以switch语句替代ifelse
 		switch (cur_char)
@@ -78,20 +91,20 @@ static TOKEN get_token(std::istream &input){
 			cur_char = input.get();
 			break;
 		case '\n':
-			DEBUG_STDOUT_TOKEN(cur_char);
+			//DEBUG_STDOUT_TOKEN(cur_char, "\"\\n\"");
 			++current_line_number;
 			cur_char = input.get();
 			break;
 		case '(':
-			DEBUG_STDOUT_TOKEN(cur_char);
+			DEBUG_STDOUT_TOKEN("", "\"(\", TOKEN::LBRACE");
 			cur_char = input.get();
 			return TOKEN::LBRACE;
 		case ')':
-			DEBUG_STDOUT_TOKEN(cur_char);
+			DEBUG_STDOUT_TOKEN("", "\")\", TOKEN::RBRACE");
 			cur_char = input.get();
 			return TOKEN::RBRACE;
 		case ';':		//comment begin;
-			DEBUG_STDOUT_TOKEN(cur_char);
+			DEBUG_STDOUT_TOKEN("", "\";\", Comment");
 			while (cur_char != '\n') {
 				cur_char = input.get();
 			}
@@ -122,43 +135,53 @@ static TOKEN get_token(std::istream &input){
 				cur_char = input.get();
 			}
 
-			if (dot_number > 1){
-				isNumber = false;
-			}
-			DEBUG_STDOUT_TOKEN(tmp);
-
 			if (isNumber){
-				if (dot_number == 0){
-					current_int = stoi(tmp);
-					return TOKEN::INTEGER;
-				}
-				else{
-					current_double = stod(tmp);
-					return TOKEN::DOUBLE;
-				}
+				DEBUG_STDOUT_TOKEN(tmp, "TOKEN::DOUBLE");
+				current_double = stod(tmp);
+				return TOKEN::DOUBLE;
 			}
 			else{
+				DEBUG_STDOUT_TOKEN(tmp, "TOKEN::IDENTIFIER");
 				current_identifer = tmp;
 				return TOKEN::IDENTIFIER;
 			}
 		}
 		default:
 			//identifier类型
-			//可能以字母，加减乘除小于小于等于号起始
-
 			if (is_identifier_char(cur_char) || cur_char == '_'){
 				std::string tmp(1, cur_char);
 				cur_char = input.get();
 				while (!isspace(cur_char) && cur_char != '(' && cur_char != ')' && cur_char != ';' && cur_char != EOF) {					tmp += cur_char;					cur_char = input.get();
 				}
 				current_identifer = tmp;
-				DEBUG_STDOUT_TOKEN(tmp);
+
+				if (tmp == "define"){
+					DEBUG_STDOUT_TOKEN(tmp, "TOKEN::DEFINE");
+					return TOKEN::DEFINE;
+				}
+				else if (tmp == "if"){
+					DEBUG_STDOUT_TOKEN(tmp, "TOKEN::IF");
+					return TOKEN::IF;
+				}
+				else if (tmp == "cond"){
+					DEBUG_STDOUT_TOKEN(tmp, "TOKEN::COND");
+					return TOKEN::COND;
+				}
+				else if (tmp == "else"){
+					DEBUG_STDOUT_TOKEN(tmp, "TOKEN::ELSE");
+					return TOKEN::ELSE;
+				}
+				else if (tmp == "lambda"){
+					DEBUG_STDOUT_TOKEN(tmp, "TOKEN::LAMBDA");
+					return TOKEN::LAMBDA;
+				}
+				DEBUG_STDOUT_TOKEN(tmp, "TOKEN::IDENTIFER");
 				return TOKEN::IDENTIFIER;
 			}
 			else
-				DEBUG_STDOUT_TOKEN(cur_char); 
-				cur_char = input.get();
-				return TOKEN::UNKNOWN;
+				DEBUG_STDOUT_TOKEN(cur_char, "TOKEN::UNKNOWN");
+			cur_char = input.get();
+			return TOKEN::UNKNOWN;
 		}
 
 

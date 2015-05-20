@@ -4,12 +4,11 @@
 #include <string>
 #include <vector>
 
-namespace MiniScheme{
+namespace CppScheme{
 
 	class ExpAST;
 	enum ObjectType{
 		PROCEDURE = 1,
-		INTEGEROBJ,
 		DOUBLEOBJ,
 		BOOLOBJ,
 		PAIROBJ,
@@ -19,34 +18,22 @@ namespace MiniScheme{
 	public:
 		ObjectType obtype;
 		Object(ObjectType _Ty) :obtype(_Ty){}
-		virtual ~Object() = 0;
+		virtual ObjectType get_type(){ return obtype; }
 	};
 
-	class Number :public Object{
-	public:
-		Number(ObjectType _Ty) :Object(_Ty){}
-	};
-
-	class DoubleValue :public Number{
+	class DoubleValue :public Object{
 	public:
 		double value;
-		DoubleValue() :Number(DOUBLEOBJ){}
-		DoubleValue(double _V) :value(_V), Number(DOUBLEOBJ){}
+		DoubleValue() :Object(ObjectType::DOUBLEOBJ){}
+		DoubleValue(double _V) :value(_V), Object(ObjectType::DOUBLEOBJ){}
 	};
 
-	class IntegerValue :public Number{
-	public:
-		int value;
-		IntegerValue() :Number(INTEGEROBJ){}
-		IntegerValue(int _V) :value(_V), Number(INTEGEROBJ){}
-	};
 
 	//数据变量
 	//为了简化程序，所有的数值以double类型表示
 	class Variable :public Object{
 		std::string name;
-		double value;
-		Variable(double val, std::string s = std::string("")) :name(s), value(val), Object(DOUBLEOBJ){}
+		Variable(std::string s = std::string("")) :name(s),  Object(DOUBLEOBJ){}
 	};
 
 
@@ -57,6 +44,8 @@ namespace MiniScheme{
 		ExpAST* expr;
 		Procedure() :Object(ObjectType::PROCEDURE){}
 	};
+	
+
 
 	class BoolValue :public Object{
 	public:
@@ -68,10 +57,10 @@ namespace MiniScheme{
 
 	class Pair :public Object{
 	public:
-		Object *cur;
+		Object *first;
 		Object *next;
-		Pair() :Object(ObjectType::PAIROBJ), cur(nullptr), next(nullptr){}
-		Pair(Object* _x, Object* _y) :cur(_x), next(_y), Object(ObjectType::PAIROBJ){}
+		Pair() :Object(ObjectType::PAIROBJ), first(nullptr), next(nullptr){}
+		Pair(Object* _x, Object* _y) :first(_x), next(_y), Object(ObjectType::PAIROBJ){}
 	};
 }
 

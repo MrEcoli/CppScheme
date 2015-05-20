@@ -4,19 +4,21 @@
 
 #include <string>
 #include <vector>
-#include "Object.h"
 #include <map>
+#include "Object.h"
 #include "slist.h"
+#include "build_in.h"
+using namespace CppScheme;
 
-namespace MiniScheme{
 
 
-	//抽象AST的基类
+namespace CppScheme{
+	class BuiltIn;
+
 	class ExpAST{
 	public:
 		typedef std::map<std::string, Object*> EnvTree;
 		typedef slist<EnvTree> EnvTreeList;
-		virtual ~ExpAST();
 		virtual Object* eval(EnvTreeList) = 0;
 	};
 
@@ -60,6 +62,8 @@ namespace MiniScheme{
 	};
 
 
+
+
 	//define语句产生的ExpAST
 	//define语句不是一个终结语句，define后可能紧跟着其他的ExpAST
 	class DefineExp :public ExpAST{
@@ -101,9 +105,7 @@ namespace MiniScheme{
 	
 	Object* VariableExp::eval(EnvTreeList local_env){
 		auto cur_env = local_env.head;
-
 		while (cur_env) {
-
 			auto iter = cur_env->ptr_to_data->find(var_name);
 			if (iter != cur_env->ptr_to_data->end ()){
 				return iter->second;
@@ -119,10 +121,23 @@ namespace MiniScheme{
 	
 	Object* CallProcedureExp::eval(EnvTreeList env){
 				
-
+		//首先判断是否为内置函数
+		//内置函数被注册在Globalvariable的map中，它们为重载了operator()的类，它们与Object类中间有一个BuiltIn 抽象基类的中间层
 		if (VariableExp* var = dynamic_cast<VariableExp*>(func)){
-			
+			auto iter = GlobalVariable->find(var->var_name);
+			if (iter != GlobalVariable->end()){
+				if (BuiltIn *func = dynamic_cast<BuiltIn*>(iter->second)){
+					size_t n = parameters.size();
+					std::vector<Object*> args(n);
+					for (size_t i = 0; i != n; ++i) {
+						args[i] = parameters[i]->eval(env);
+					}
+					return (*func)(args);
+				}
+			}
+
 		}
+
 		if (Procedure* proc = dynamic_cast<Procedure*>(func->eval (env))){
 			
 			if (proc->args.size () != parameters.size ()){
@@ -158,9 +173,14 @@ namespace MiniScheme{
 
 		(*env.head->ptr_to_data)[this->name] = ret;
 
-		return next->eval(env);
+		if (next){
+			return next->eval(env);
+		}
+		else
+			return nullptr;
 	}
 
+	static bool eval_boolean(ExpAST* ifexp, bool& res, EnvTreeList env);
 	Object* IfelseExp::eval(EnvTreeList env){
 
 		bool res = true;
@@ -222,11 +242,6 @@ namespace MiniScheme{
 				res = false;
 			}
 		}
-		else if (IntegerValue* ptr = dynamic_cast<IntegerValue*>(cond)){
-			if (ptr->value == 0){
-				res = false;
-			}
-		}
 		else if (DoubleValue* ptr = dynamic_cast<DoubleValue*>(cond)){
 			if (ptr->value == 0){
 				res = false;
@@ -242,9 +257,13 @@ namespace MiniScheme{
 		return true;
 
 	}
-	
 
-
+	Object* ProcedureExp::eval(EnvTreeList env){
+		Procedure* ret = new Procedure();
+		ret->args = this->args;
+		ret->expr = this->expr;
+		return ret;
+	}
 
 }
 

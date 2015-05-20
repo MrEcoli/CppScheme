@@ -2,8 +2,9 @@
 #include <iostream>
 #include "Parser.h"
 #include <fstream>
+#include "build_in.h"
 #include <xtree>
-using namespace MiniScheme;
+using namespace CppScheme;
 using std::cin;
 using std::cerr;
 using std::endl;
@@ -23,16 +24,59 @@ void printCurrentEnv(EnvTreeList& env){
 }
 
 
+void mainloop(EnvTreeList env){
+	while (1){
+		cur_char = std::cin.get();
+		ExpAST* expr = parseExpAst(std::cin, env);
+
+		if (!expr){
+
+		}
+		else if (Object* ret = expr->eval(env)){
+			if (DoubleValue* ptr = dynamic_cast<DoubleValue*>(ret)){
+				cout << ptr->value << endl;
+			}else if (Procedure* ptr = dynamic_cast<Procedure*>(ret)){
+				cout << "Procedure" << endl;
+			}
+			else if (BoolValue* ptr = dynamic_cast<BoolValue*>(ret)){
+				if (ptr->value){
+					cout << "#t" << endl;
+				}
+				else{
+					cout << "#f" << endl;
+				}
+			}
+		}
+	}
+}
+
+
+void init(EnvTree* env){
+	(*env)["+"] = new Add();
+	(*env)["*"] = new Mul();
+	(*env)["/"] = new Div();
+	(*env)["-"] = new Sub();
+	(*env)["cons"] = new Cons();
+	(*env)["car"] = new Car();
+	(*env)["cdr"] = new Cdr();
+	(*env)["list"] = new List();
+	(*env)["<"] = new Less();
+	(*env)[">"] = new Greater();
+	(*env)["="] = new Equal();
+	(*env)["remainder"] = new Remainder();
+}
+
+
 int main(){
 
 
 	
 
 	GlobalVariable = new EnvTree();
+	init(GlobalVariable);
 	Env = Env.push_front(GlobalVariable);
 
-	
-
+	mainloop(Env);
 
 
 //Variable List Test
@@ -64,13 +108,14 @@ int main(){
 
 
 //get_token function test
+/*
 	std::ifstream inputfile;
 	#define DEBUG_TOKEN
 	inputfile.open("E:\\BaiduDisk\\Code\\Compiler\\PGWT\\CppScheme\\miniScheme\\intput.mscm");
 	cur_char = inputfile.get();
 	while (cur_char != EOF) {
 	get_token(inputfile);
-	}
+	}*/
 
 	cin.get();
 

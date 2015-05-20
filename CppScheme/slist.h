@@ -7,7 +7,7 @@
 //https://github.com/MrEcoli/CppScheme/blob/master/Data/Enviroment.jpg
 
 
-namespace MiniScheme{
+namespace CppScheme{
 
 	template<typename T>
 	class _list_node{
