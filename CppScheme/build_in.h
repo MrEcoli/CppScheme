@@ -17,7 +17,7 @@ namespace CppScheme{
 	class ExpAST;
 
 
-	class BuiltIn:public Object{
+	class BuiltIn :public Object{
 	public:
 		BuiltIn() :Object(ObjectType::PROCEDURE){}
 		virtual Object* operator()(std::vector<Object*>& args) = 0;
@@ -173,13 +173,13 @@ namespace CppScheme{
 
 			double v1 = ((DoubleValue*)(args[0]))->value;
 			double v2 = ((DoubleValue*)(args[1]))->value;
-			
+
 			if (v1 < v2){
 				return new BoolValue(true);
 			}
 			else
 				return new BoolValue(false);
-			
+
 		}
 	};
 
@@ -193,6 +193,12 @@ namespace CppScheme{
 
 			double v1 = ((DoubleValue*)(args[0]))->value;
 			double v2 = ((DoubleValue*)(args[1]))->value;
+			/*
+
+						std::cout << "Greater operator" << std::endl;
+						std::cout << "current left value v1 = " << v1 << std::endl;
+						std::cout << "current left value v2 = " << v2 << std::endl;
+						*/
 
 			if (v1 > v2){
 				return new BoolValue(true);
@@ -236,6 +242,150 @@ namespace CppScheme{
 		}
 	};
 
+	class Set :public BuiltIn{
+	public:
+		Object* operator()(std::vector<Object*>& args){
+			if (args.size() != 2){
+				std::cout << "Set! operator error, needs more than one operator, expression give " << args.size() << std::endl;
+				return nullptr;
+			}
+			args[0] = args[1];
+			return args[0];
+		}
+	};
+
+	inline bool is_condition_true(Object* obj, bool& result){
+		result = true;
+		if (!obj){
+			return false;
+		}
+
+		if (BoolValue* ptr = dynamic_cast<BoolValue*>(obj)){
+			if (!ptr->value){
+				result = false;
+			}
+		}
+		else if (DoubleValue* ptr = dynamic_cast<DoubleValue*>(obj)){
+			if (ptr->value == 0)
+				result = false;
+		}
+		return true;
+	}
+
+	class Or :public BuiltIn{
+	public:
+		Object* operator()(std::vector<Object*>& args){
+			if (args.size() < 2){
+				std::cout << "Or operator error, needs more than one operator, expression give " << args.size() << std::endl;
+				return nullptr;
+			}
+
+			bool cur_cond;
+			for (size_t idx = 0; idx != args.size(); ++idx) {
+				if (is_condition_true(args[idx], cur_cond)){
+					if (cur_cond){
+						return new BoolValue(true);
+					}
+
+				}
+				else{
+					std::cerr << "Not valid Object " << std::endl;
+					return nullptr;
+				}
+			}
+			return new BoolValue(false);
+
+		}
+	};
+
+	class And :public BuiltIn{
+	public:
+		Object* operator()(std::vector<Object*>& args){
+			if (args.size() < 2){
+				std::cout << "And operator error, needs more than one operator, expression give " << args.size() << std::endl;
+				return nullptr;
+			}
+
+			bool cur_cond;
+			for (size_t idx = 0; idx != args.size(); ++idx) {
+				if (is_condition_true(args[idx], cur_cond)){
+					if (!cur_cond){
+						return new BoolValue(false);
+					}
+
+				}
+				else{
+					std::cerr << "Not valid Object " << std::endl;
+					return nullptr;
+				}
+			}
+			return new BoolValue(true);
+		}
+	};
+
+	class Not :public BuiltIn{
+	public:
+		Object* operator()(std::vector<Object*>& args){
+			if (args.size() != 1){
+				std::cout << "Not operator error, expected only one operator, expression give " << args.size() << std::endl;
+				return nullptr;
+			}
+			bool cur_cond = true;
+			if (is_condition_true(args[0], cur_cond)){
+				if (cur_cond){
+					return new BoolValue(false);
+				}
+				else{
+					return new BoolValue(true);
+				}
+			}
+			else{
+				std::cerr << "Invalid Object given" << std::endl;
+				return nullptr;
+			}
+		}
+	};
+
+	class IsEven :public BuiltIn{
+		Object* operator()(std::vector<Object*>& args){
+			if (args.size() != 1){
+				std::cout << "IsEven? operator error, expected only one operator, expression give " << args.size() << std::endl;
+				return nullptr;
+			}
+
+			if (DoubleValue* ptr = dynamic_cast<DoubleValue*>(args[0])){
+				int val = ptr->value;
+				if (!(val && 1)){
+					return new BoolValue(true);
+				}
+				else{
+					return new BoolValue(false);
+				}
+			}
+			else{
+				std::cerr << "Expected Number Object in even? operator!" << std::endl;
+				return nullptr;
+			}
+		}
+	};
+
+	class Square :public BuiltIn{
+		Object* operator()(std::vector<Object*>& args){
+			if (args.size() != 1){
+				std::cout << "Square operator error, expected only one operator, expression give " << args.size() << std::endl;
+				return nullptr;
+			}
+
+			if (DoubleValue* ptr = dynamic_cast<DoubleValue*>(args[0])){
+				double val = ptr->value;
+				return new DoubleValue(val*val);
+			}
+			else{
+				std::cerr << "Expected Number Object in square operator!" << std::endl;
+				return nullptr;
+			}
+		}
+	};
 }
 
 #endif

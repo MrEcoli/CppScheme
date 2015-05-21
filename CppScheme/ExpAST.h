@@ -20,6 +20,7 @@ namespace CppScheme{
 		typedef std::map<std::string, Object*> EnvTree;
 		typedef slist<EnvTree> EnvTreeList;
 		virtual Object* eval(EnvTreeList) = 0;
+		virtual ~ExpAST(){}
 	};
 
 
@@ -57,7 +58,6 @@ namespace CppScheme{
 	public:
 		ExpAST* func;
 		std::vector<ExpAST*> parameters;
-
 		Object* eval(EnvTreeList) override;
 	};
 
@@ -102,15 +102,15 @@ namespace CppScheme{
 		Object* eval(EnvTreeList) override;
 	};
 
-	
+	//根据var_name在EnvTree中查找Object*;
 	Object* VariableExp::eval(EnvTreeList local_env){
+		//std::cout << "var_name is " << var_name << std::endl;
 		auto cur_env = local_env.head;
 		while (cur_env) {
 			auto iter = cur_env->ptr_to_data->find(var_name);
 			if (iter != cur_env->ptr_to_data->end ()){
 				return iter->second;
 			}
-
 			cur_env = cur_env->next;
 		}
 
@@ -212,6 +212,7 @@ namespace CppScheme{
 		for (size_t idx = 0; idx != n - 1; ++idx) {
 			if (eval_boolean(conds[idx], condBool, env)){
 				if (condBool){
+					std::cout << "true" << std::endl;
 					return rets[idx]->eval(env);
 				}
 			}
@@ -236,8 +237,13 @@ namespace CppScheme{
 
 		bool condBool = true;
 		
+		res = true;
 
 		if (BoolValue* ptr = dynamic_cast<BoolValue*>(cond)){
+			if (ptr->value){
+				std::cout << "Condition is true" << std::endl;
+			}
+
 			if (!ptr->value){
 				res = false;
 			}

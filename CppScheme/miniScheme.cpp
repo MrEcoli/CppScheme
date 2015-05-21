@@ -64,6 +64,12 @@ void init(EnvTree* env){
 	(*env)[">"] = new Greater();
 	(*env)["="] = new Equal();
 	(*env)["remainder"] = new Remainder();
+	(*env)["and"] = new And();
+	(*env)["or"] = new Or();
+	(*env)["not"] = new Not();
+	(*env)["even?"] = new IsEven();
+	(*env)["square"] = new Square();
+		
 }
 
 
