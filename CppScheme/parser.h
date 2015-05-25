@@ -9,6 +9,7 @@
 #define DEBUG(S) std::cout<<(S)<<std::endl;
 
 using namespace CppScheme;
+
 //SchemeµÄ·¶Ê½±È½Ï¼òµ¥£¬°üÀ¨
 // number				³£Á¿ÊýÖµ¡¤1
 // variable				¶ÔÏó,¿ÉÒÔÊÇ±äÁ¿»òÊÇ¹ý³Ì
@@ -31,7 +32,7 @@ void parseArgs(std::istream& in, std::vector< std::string > &args);
 
 ExpAST* parseCondExp(std::istream& in, EnvTreeList current_env);
 
-bool parseCondExp(std::istream& in, EnvTreeList current_env, std::vector<ExpAST*> &conds, std::vector<ExpAST*> &rets);
+bool parseCondExp(std::istream& in, EnvTreeList current_env, std::vector<ExpAST*> &conds, std::vector<std::vector<ExpAST*>> &rets);
 
 ExpAST* parseCallExp(std::istream& in, EnvTreeList current_env);
 
@@ -54,7 +55,7 @@ ExpAST* parseExpAst(std::istream& in, EnvTreeList current_env, int left = 0){
 		TOKEN _tok = get_token(in);
 		switch (_tok)
 		{
-		case TOKEN::DOUBLE:
+		case TOKEN::NUMBER:
 			return new SimpleExp(new DoubleValue(current_double));
 		case TOKEN::IDENTIFIER:
 			return new VariableExp(current_identifer);
@@ -74,7 +75,10 @@ ExpAST* parseExpAst(std::istream& in, EnvTreeList current_env, int left = 0){
 		switch (_tok)
 		{
 		case TOKEN::DEFINE:
-			return parseDefineExp(in, current_env);
+		{
+			ExpAST* def = parseDefineExp(in, current_env);
+			return def;
+		}
 		case TOKEN::IF:
 			return parseIFElseAST(in, current_env);
 		case TOKEN::LAMBDA:
@@ -85,7 +89,7 @@ ExpAST* parseExpAst(std::istream& in, EnvTreeList current_env, int left = 0){
 			return parseLetExp(in, current_env);
 		case TOKEN::RBRACE:
 			return nullptr;
-		case TOKEN::DOUBLE:
+		case TOKEN::NUMBER:
 			std::cerr << "Uncallable with Number " << current_line_number << std::endl;
 			return nullptr;
 		default:
@@ -96,94 +100,52 @@ ExpAST* parseExpAst(std::istream& in, EnvTreeList current_env, int left = 0){
 }
 
 
-/*
-void parseBegin(std::istream& in){
-while (1){
-TOKEN cur_token = get_token(in);
-//Ê¹ÓÃswitchÓï¾äÐ§ÂÊ¸ü¸ß£¬Ðè½øÐÐÖØ¹¹
-if (cur_token == TOKEN::IDENTIFIER){
-auto iter = GlobalVariable->find(current_identifer);
-if (iter == GlobalVariable->end()){
-std::cerr << "Couldn't find the identifier \"" << current_identifer << "\"" << std::endl;
-}
-else{
-if (iter->second->obtype == ObjectType::PROCEDURE && dynamic_cast<Procedure*>(iter->second)){
-std::cout << "<procedure> " << current_identifer << std::endl;
-}
-else if (iter->second->obtype == ObjectType::DOUBLEOBJ){
-if (DoubleValue* ptr = dynamic_cast<DoubleValue*>(iter->second)){
-std::cout << ptr->value << std::endl;
-}
-}
-else if (iter->second->obtype == ObjectType::INTEGEROBJ){
-if (IntegerValue* ptr = dynamic_cast<IntegerValue*>(iter->second)){
-std::cout << ptr->value << std::endl;
-}
-}
-}
-}
-else if (cur_token == TOKEN::INTEGER){
-std::cout << current_int << std::endl;
-}
-else if (cur_token == TOKEN::DOUBLE){
-std::cout << current_double << std::endl;
-}
-else if (cur_token == TOKEN::LBRACE){
-int left = 1;
-cur_token = get_token(in);
-if (cur_token == TOKEN::DEFINE){
-EnvTree* current_env = GlobalVariable;
-
-}
-
-
-}
-else if (cur_token == TOKEN::TEOF){
-break;
-}
-else{
-
-}
-}
-}
-*/
-
-
-
-
-
+// define a variable or function is different;
+//**********************************************************
+//******************* define procedure *********************
+//		(define   (func args...) (expr1) (expr2) (expr3) .... (expr n) )
+//                ¦«                              ¦«
+//                |                              |
+//           function start token;              eat the last brace;
+//
+//************************* or *****************************
+//******************* define variable **********************
+//
+//		(define   variable_name   one_expression )
+//                ¦«                        ¦«
+//                |                        |
+//           function start token;        eat the last brace;
+//**********************************************************
 ExpAST* parseDefineExp(std::istream& in, EnvTreeList current_env){
-	//		(define   (func args...) (expr ... ... ) )
-	//                ¦«                              ¦«
-	//                |                              |
-	//           function start token;              eat the last brace;
-
 	std::string _name;
 	TOKEN _tok = get_token(in);
 	if (_tok == TOKEN::LBRACE){
 		_tok = get_token(in);
+
 		if (_tok != IDENTIFIER){
 			std::cerr << "invalid name at " << current_line_number << std::endl;
 			return nullptr;
 		}
-		DefineExp* result = new DefineExp();
-		result->name = current_identifer;
-		ProcedureExp* proc = new ProcedureExp();
-		parseArgs(in, proc->args);
 
-		proc->expr = parseExpAst(in, current_env);
+		DefineProcedureExp *result = new DefineProcedureExp;
+		result->_name = current_identifer;
+		//parse aguments
+		parseArgs(in, result->_args);
 
-		result->expr = proc;
+		//parse procedure expressions;
+		while (ExpAST* exp = parseExpAst (in, current_env)) {
+			result->exprs.push_back(exp);
+		}
 
 		return result;
 	}
 	else if (_tok == TOKEN::IDENTIFIER){
-		DefineExp *result = new DefineExp();
-		result->name = current_identifer;
-		result->expr = parseExpAst(in, current_env);
+		DefineVariableExp* result = new DefineVariableExp();
+		result->_name = current_identifer;
+		result->_expr = parseExpAst(in, current_env);
 		_tok = get_token(in);
 		if (_tok != TOKEN::RBRACE){
-			std::cout << "Expected to be right brace ')'" << std::endl;
+			std::cerr << "Invalid Define Syntax" << std::endl;
 			return nullptr;
 		}
 		return result;
@@ -219,6 +181,12 @@ void parseArgs(std::istream& in, std::vector < std::string > &args){	//¹¹½¨²ÎÊýÁ
 
 
 ExpAST* parseLambdaExp(std::istream& in, EnvTreeList current_env){
+	//eat last right brace:: (lambda  (args) (expr 1) (expr 2) (expr 3)... (expr n) ) 
+	//								¦«			                                    ¦«
+	//								|			                                    |	
+	//		this function start from here;                               eat this brace
+
+	std::cout << "parseing lambda exp ................" << std::endl;
 	TOKEN _tok = get_token(in);
 	if (_tok != LBRACE){
 		std::cerr << "Invalid syntax, expect to be LBRACE \')\', line number " << current_line_number << std::endl;
@@ -227,18 +195,11 @@ ExpAST* parseLambdaExp(std::istream& in, EnvTreeList current_env){
 
 	ProcedureExp* result = new ProcedureExp();
 	parseArgs(in, result->args);
-	result->expr = parseExpAst(in, current_env);
 
-	_tok = get_token(in);
-	//eat last right brace:: (lambda  (args) (expr ..) ) 
-	//								¦«			      ¦«
-	//								|			      |	
-	//		this function start from here;       eat this brace
-
-	if (_tok != RBRACE){
-		std::cerr << "Invalid syntax, expect to be RBRACE \')\', line number " << current_line_number << std::endl;
-		return nullptr;
+	while (ExpAST* exp = parseExpAst (in, current_env)) {
+		result->exprs.push_back(exp);
 	}
+
 
 	return result;
 }
@@ -246,7 +207,12 @@ ExpAST* parseLambdaExp(std::istream& in, EnvTreeList current_env){
 
 
 
-
+// ***************  ifelse expression syntax ***************
+//       ( if condition_expr then_expr else_expr )
+//            ¦«                                  ¦«
+//            |                                  |
+//          function start                       eat
+//**********************************************************
 ExpAST* parseIFElseAST(std::istream& in, EnvTreeList current_env){
 
 	IfelseExp* result = new IfelseExp();
@@ -254,71 +220,76 @@ ExpAST* parseIFElseAST(std::istream& in, EnvTreeList current_env){
 	result->ifexp = parseExpAst(in, current_env, 0);
 	result->thenexp = parseExpAst(in, current_env, 0);
 	result->elseexp = parseExpAst(in, current_env, 0);
+	
+	TOKEN _tok = get_token(in);
+	if (_tok != TOKEN::RBRACE){
+		std::cerr << "Invalid IfElse expression, expect right brace at end" << std::endl;
+		return nullptr;
+	}
+
 	return result;
 }
 
+//************************************ cond expression syntax **************************************
+// (cond  (cond1 ret1_1 ... ret1_n ) (cond1 ret2_1 ... ret2_n ) ... ( else retx_1 ... retx_n) )
+//        ¦«   ¦«                                                                               ¦«
+//        |   |                                                                               |
+//func start  get the conditions and returns                                         eat the last lbrace;
+//**************************************************************************************************
 ExpAST* parseCondExp(std::istream& in, EnvTreeList current_env){
-	// (cond   (cond1, ret1) (cond1, ret 1) ... ( else , retx) )
-	//         ¦«     ¦«                                         ¦«
-	//         |     |                                         |
-	//  func start   get the conditions and returns           eat the last lbrace;
 
 	CondExp* result = new CondExp();
-	parseCondExp(in, current_env, result->conds, result->rets);
-	TOKEN _tok = get_token(in);	//eat last ')'
-	if (_tok != TOKEN::RBRACE){
-		std::cerr << "syntax error, expect ')'" << std::endl;
+
+	if (!parseCondExp(in, current_env, result->conds, result->rets)){
 		return nullptr;
 	}
+
 	return result;
 }
 
 
 //get the condition and return expAST of cond expression
-bool parseCondExp(std::istream& in, EnvTreeList current_env, std::vector<ExpAST*> &conds, std::vector<ExpAST*> &rets){
+bool parseCondExp(std::istream& in, EnvTreeList current_env, std::vector<ExpAST*> &conds, std::vector<std::vector<ExpAST*>> &rets){
+
+	// (cond  (cond1 ret1_1 ret1_2 ... ret1_n ) (cond1 ret2_1 ret2_2 ... ret2_n ) ... ( else retx_1 retx_2 ... retx_n) )
+
 	TOKEN _tok = get_token(in);
-	if (_tok != TOKEN::LBRACE){
-		std::cerr << "syntax error, expect '('" << std::endl;
-		return false;
-	}
-	ExpAST* exp1, *exp2;
-	while (exp1 = parseExpAst(in, current_env)) {
-		exp2 = parseExpAst(in, current_env);
+	
+	ExpAST* exp1 = nullptr, *exp2 = nullptr;
+
+	int pos = 0;
+	while(_tok == TOKEN::LBRACE) {
+		exp1 = parseExpAst(in, current_env);
 		conds.push_back(exp1);
-		rets.push_back(exp2);
-		_tok = get_token(in);
-		if (_tok != TOKEN::RBRACE){
-			std::cerr << "syntax error, expect ')'" << std::endl;
-			return false;
+		rets.push_back(std::vector<ExpAST*>());
+		while (exp2 = parseExpAst (in, current_env)) {
+			rets[pos].push_back(exp2);
 		}
+
+		++pos;
 		_tok = get_token(in);
-		if (_tok != TOKEN::LBRACE){
-			std::cerr << "syntax error, expect '('" << std::endl;
-			return false;
-		}
 	}
 
-	conds.push_back(exp1);
-	rets.push_back(parseExpAst(in, current_env));
-	_tok = get_token(in);	//eat ')'
-	if (_tok != TOKEN::RBRACE){
-		std::cerr << "syntax error, expect ')'" << std::endl;
+
+	if (exp1 != nullptr || _tok != TOKEN::RBRACE){
+		std::cerr << "Cond expression syntax error" << std::endl;
 		return false;
 	}
+
 	return true;
 }
 
 
+//***************************** Call Procedure Syntax ****************************
+// CallExpression ->    (expr_of_procedure  arg1  arg2  arg3  ...  )
+//                       ¦«                                         ¦«
+//                       |                                         |
+//                   function start;                     no need to eat explict;
+//********************************************************************************
 
-//×ó±ßÒÑÓÐÒ»¸ö×óÀ¨ºÅ'(';
 ExpAST* parseCallExp(std::istream& in, EnvTreeList current_env){
-	// CallExpression ->    (expr_of_procedure  arg1  arg2  arg3  ...  )
-	//                       ¦«                                         ¦«
-	//                       |                                         |
-	//                   function start;                     no need to eat explict;
 
-
-	CallProcedureExp * result = new CallProcedureExp();
+	CallProcedureExp *result = new CallProcedureExp();
 
 	result->func = parseExpAst(in, current_env);
 
@@ -327,10 +298,9 @@ ExpAST* parseCallExp(std::istream& in, EnvTreeList current_env){
 		return nullptr;
 	}
 
-	ExpAST * cur;
-
-	while (cur = parseExpAst(in, current_env)) {
-		result->parameters.push_back(cur);
+	//if get TOKEN::RBRACE return nullptr
+	while (ExpAST* exp = parseExpAst(in, current_env)) {
+		result->parameters.push_back(exp);
 	}
 
 	return result;
@@ -340,23 +310,28 @@ ExpAST* parseCallExp(std::istream& in, EnvTreeList current_env){
 
 //letÓï¾äÆäÊµ¾ÍÊÇÒ»¸öµ÷ÓÃlambdaÓï¾äµÄÓï·¨ÌÇ£¬±äÁ¿³õÊ¼»¯½×¶ÎµÈÍ¬ÓÚ¸øÓèlambdaº¯Êý
 //¿ÉÒÔÖ±½Ó½âÎöÎªCallProcedureExp
+// *************************** Let Expression Syntax ************************************************
+// **************************************************************************************************
+//let syntax:: (let   ( (v1 expr1)  (v2 epxr2)  (v3 expr3) ... (vx exprx) )    expr1 expr2 ... exprn )
+//               ¦«    ¦«                                                   ¦«                          ¦«
+//               |    |                                                   |                          |
+//    function start    aguments parse start                    aguments parse end           eat the last brace;
+// **************************************************************************************************
 ExpAST* parseLetExp(std::istream& in, EnvTreeList current_env){
-
-	//let syntax:: (let   ( (v1 expr1)  (v2 epxr2)  (v3 expr3) ... (vx exprx) )    (function body) )
-	//               ¦«    ¦«                                                   ¦«                    ¦«
-	//               |    |                                                   |                    |
-	//    function start    aguments parse start                    aguments parse end           eat the last brace;
-
+	
 	CallProcedureExp* result = new CallProcedureExp();
 	ProcedureExp* proc = new ProcedureExp();
 
 	parseLetArgs(in, current_env, proc->args, result->parameters);
 
-	proc->expr = parseExpAst(in, current_env);
+
+
+	while (ExpAST* exp = parseExpAst (in, current_env)) {
+		proc->exprs.push_back(exp);
+	}
 	result->func = proc;
 
-	TOKEN _tok = get_token(in);
-	if (_tok != TOKEN::RBRACE){
+	if (current_tok != TOKEN::RBRACE){
 		std::cerr << "expect to be right brace, invalid let syntax " << current_line_number << std::endl;
 		return nullptr;
 	}
@@ -366,6 +341,7 @@ ExpAST* parseLetExp(std::istream& in, EnvTreeList current_env){
 
 
 void parseLetArgs(std::istream& in, EnvTreeList current_env, std::vector<std::string>& args, std::vector<ExpAST*>& parameters){
+	//let syntax:: (let   ( (v1 expr1)  (v2 epxr2)  (v3 expr3) ... (vx exprx) )    expr1 expr2 ... exprn )
 
 	TOKEN _tok = get_token(in);
 	if (_tok != LBRACE){

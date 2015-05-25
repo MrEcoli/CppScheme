@@ -19,6 +19,7 @@ namespace CppScheme{
 		ObjectType obtype;
 		Object(ObjectType _Ty) :obtype(_Ty){}
 		virtual ObjectType get_type(){ return obtype; }
+		virtual ~Object(){}
 	};
 
 	class DoubleValue :public Object{
@@ -41,8 +42,13 @@ namespace CppScheme{
 	class Procedure :public Object{
 	public:
 		std::vector < std::string > args;
-		ExpAST* expr;
+		std::vector<ExpAST*> exprs;
 		Procedure() :Object(ObjectType::PROCEDURE){}
+		~Procedure(){
+			for (size_t idx = 0; idx < exprs.size(); ++idx) {
+				delete exprs[idx];
+			}
+		}
 	};
 	
 
@@ -61,6 +67,16 @@ namespace CppScheme{
 		Object *next;
 		Pair() :Object(ObjectType::PAIROBJ), first(nullptr), next(nullptr){}
 		Pair(Object* _x, Object* _y) :first(_x), next(_y), Object(ObjectType::PAIROBJ){}
+
+		~Pair(){
+			if (first){
+				delete first;
+			}
+			if (next){
+				delete next;
+			}
+		}
+
 	};
 }
 

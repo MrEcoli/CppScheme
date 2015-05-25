@@ -16,7 +16,13 @@ static EnvTree* GlobalVariable;
 namespace CppScheme{
 	class ExpAST;
 
-
+	static void free_memory(std::vector<Object*> &args){
+		for (size_t idx = 0; idx < args.size(); ++idx) {
+			if (args[idx]){
+				delete args[idx];
+			}
+		}
+	}
 	class BuiltIn :public Object{
 	public:
 		BuiltIn() :Object(ObjectType::PROCEDURE){}
@@ -107,6 +113,9 @@ namespace CppScheme{
 			{
 				ret += ((DoubleValue*)args[i])->value;
 			}
+
+			free_memory(args);
+
 			return new DoubleValue(ret);
 		}
 	};
@@ -124,6 +133,9 @@ namespace CppScheme{
 			{
 				ret -= ((DoubleValue*)args[i])->value;
 			}
+
+			free_memory(args);
+
 			return new DoubleValue(ret);
 		}
 	};
@@ -141,6 +153,8 @@ namespace CppScheme{
 			{
 				ret *= ((DoubleValue*)args[i])->value;
 			}
+
+			free_memory(args);
 			return new DoubleValue(ret);
 		}
 	};
@@ -159,6 +173,7 @@ namespace CppScheme{
 			{
 				ret /= ((DoubleValue*)args[i])->value;
 			}
+			free_memory(args);
 			return new DoubleValue(ret);
 		}
 	};
@@ -173,6 +188,8 @@ namespace CppScheme{
 
 			double v1 = ((DoubleValue*)(args[0]))->value;
 			double v2 = ((DoubleValue*)(args[1]))->value;
+
+			free_memory(args);
 
 			if (v1 < v2){
 				return new BoolValue(true);
@@ -200,6 +217,9 @@ namespace CppScheme{
 						std::cout << "current left value v2 = " << v2 << std::endl;
 						*/
 
+
+			free_memory(args);
+
 			if (v1 > v2){
 				return new BoolValue(true);
 			}
@@ -220,12 +240,21 @@ namespace CppScheme{
 			Object* result1 = Greater()(args);
 			Object* result2 = Less()(args);
 
+
+			free_memory(args);
+
+			BoolValue * ret;
 			if (((BoolValue*)result1)->value == false && ((BoolValue*)result2)->value == false){
-				return new BoolValue(true);
+				ret = new BoolValue(true);
 			}
 			else{
-				return new BoolValue(false);
+				ret = new BoolValue(false);
 			}
+
+			delete result1;
+			delete result2;
+
+			return ret;
 		}
 	};
 
@@ -236,8 +265,11 @@ namespace CppScheme{
 				std::cout << "Remainder operator error, needs more than one operator, expression give " << args.size() << std::endl;
 				return nullptr;
 			}
+
 			int v1 = ((DoubleValue*)args[0])->value;
 			int v2 = ((DoubleValue*)args[1])->value;
+
+			free_memory(args);
 			return new DoubleValue(v1 % v2);
 		}
 	};
@@ -281,18 +313,22 @@ namespace CppScheme{
 			}
 
 			bool cur_cond;
+			BoolValue* ret;
 			for (size_t idx = 0; idx != args.size(); ++idx) {
 				if (is_condition_true(args[idx], cur_cond)){
 					if (cur_cond){
-						return new BoolValue(true);
+						free_memory(args);
+						ret = new BoolValue(true);
 					}
 
 				}
 				else{
 					std::cerr << "Not valid Object " << std::endl;
-					return nullptr;
+					free_memory(args);
+					ret = nullptr;
 				}
 			}
+			free_memory(args);
 			return new BoolValue(false);
 
 		}
@@ -310,15 +346,18 @@ namespace CppScheme{
 			for (size_t idx = 0; idx != args.size(); ++idx) {
 				if (is_condition_true(args[idx], cur_cond)){
 					if (!cur_cond){
+						free_memory(args);
 						return new BoolValue(false);
 					}
 
 				}
 				else{
 					std::cerr << "Not valid Object " << std::endl;
+					free_memory(args);
 					return nullptr;
 				}
 			}
+			free_memory(args);
 			return new BoolValue(true);
 		}
 	};
@@ -331,18 +370,21 @@ namespace CppScheme{
 				return nullptr;
 			}
 			bool cur_cond = true;
+			BoolValue* ret;
 			if (is_condition_true(args[0], cur_cond)){
 				if (cur_cond){
-					return new BoolValue(false);
+					ret = new BoolValue(false);
 				}
 				else{
-					return new BoolValue(true);
+					ret = new BoolValue(true);
 				}
 			}
 			else{
 				std::cerr << "Invalid Object given" << std::endl;
-				return nullptr;
+				ret = nullptr;
 			}
+			free_memory(args);
+			return ret;
 		}
 	};
 
@@ -352,20 +394,22 @@ namespace CppScheme{
 				std::cout << "IsEven? operator error, expected only one operator, expression give " << args.size() << std::endl;
 				return nullptr;
 			}
-
+			BoolValue* ret;
 			if (DoubleValue* ptr = dynamic_cast<DoubleValue*>(args[0])){
 				int val = ptr->value;
 				if (!(val && 1)){
-					return new BoolValue(true);
+					ret = new BoolValue(true);
 				}
 				else{
-					return new BoolValue(false);
+					ret = new BoolValue(false);
 				}
 			}
 			else{
 				std::cerr << "Expected Number Object in even? operator!" << std::endl;
-				return nullptr;
+				ret = nullptr;
 			}
+			free_memory(args);
+			return ret;
 		}
 	};
 
@@ -378,14 +422,30 @@ namespace CppScheme{
 
 			if (DoubleValue* ptr = dynamic_cast<DoubleValue*>(args[0])){
 				double val = ptr->value;
+				free_memory(args);
 				return new DoubleValue(val*val);
 			}
 			else{
 				std::cerr << "Expected Number Object in square operator!" << std::endl;
+				free_memory(args);
 				return nullptr;
 			}
 		}
 	};
+
+	class Display :public BuiltIn{
+		Object* operator()(std::vector<Object*>& args){
+			if (args.size() != 1){
+				std::cout << "Display operator error, expected only one operator, expression give " << args.size() << std::endl;
+				return nullptr;
+			}
+
+			printf("%lf\n", ((DoubleValue*)args[0])->value);
+
+			return nullptr;
+		}
+	};
+
 }
 
 #endif

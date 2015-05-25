@@ -1,5 +1,15 @@
-#define DEBUG_TOKEN
+//#define DEBUG_TOKEN
+#define _CRTDBG_MAP_ALLOC
+#ifdef _DEBUG
+#ifndef DBG_NEW
+#define DBG_NEW new ( _NORMAL_BLOCK , __FILE__ , __LINE__ )
+#define new DBG_NEW
+#endif
+#endif  // _DEBUG
+#include <stdlib.h>
+#include <crtdbg.h>
 #include <iostream>
+#include <windows.h>
 #include "Parser.h"
 #include <fstream>
 #include "build_in.h"
@@ -23,20 +33,27 @@ void printCurrentEnv(EnvTreeList& env){
 	}
 }
 
+void init(EnvTree* env);
+void release(EnvTree*);
 
-void mainloop(EnvTreeList env){
-	while (1){
-		cur_char = std::cin.get();
-		ExpAST* expr = parseExpAst(std::cin, env);
+void mainloop(EnvTreeList env, std::istream& input){
+	init(GlobalVariable);
+	std::cout << "Scheme " << current_line_number << ">> ";
+	cur_char = input.get();
+	ExpAST* expr = parseExpAst(input, env);
 
-		if (!expr){
-
-		}
-		else if (Object* ret = expr->eval(env)){
+	if (expr){
+		if (Object* ret = expr->eval(env)){
 			if (DoubleValue* ptr = dynamic_cast<DoubleValue*>(ret)){
 				cout << ptr->value << endl;
-			}else if (Procedure* ptr = dynamic_cast<Procedure*>(ret)){
-				cout << "Procedure" << endl;
+			}
+			else if (Procedure* ptr = dynamic_cast<Procedure*>(ret)){
+				if (VariableExp* var_ptr = dynamic_cast<VariableExp*>(expr)){
+					cout << "#<Procedure: " << var_ptr->var_name << ">" << endl;
+				}
+				else{
+					cout << "#<Procedure>" << endl;
+				}
 			}
 			else if (BoolValue* ptr = dynamic_cast<BoolValue*>(ret)){
 				if (ptr->value){
@@ -46,11 +63,13 @@ void mainloop(EnvTreeList env){
 					cout << "#f" << endl;
 				}
 			}
+			delete ret;
 		}
+		delete expr;
 	}
 }
 
-
+//initialize the builtin functions
 void init(EnvTree* env){
 	(*env)["+"] = new Add();
 	(*env)["*"] = new Mul();
@@ -69,64 +88,37 @@ void init(EnvTree* env){
 	(*env)["not"] = new Not();
 	(*env)["even?"] = new IsEven();
 	(*env)["square"] = new Square();
-		
+	(*env)["display"] = new Display();
+
+}
+
+
+void release(EnvTree* env){
+	for (auto iter = env->begin(); iter != env->end(); ++iter) {
+		delete iter->second;
+	}
 }
 
 
 int main(){
 
-
-	
-
 	GlobalVariable = new EnvTree();
-	init(GlobalVariable);
 	Env = Env.push_front(GlobalVariable);
 
-	mainloop(Env);
+
+	std::ifstream file_in("E:\\BaiduDisk\\Code\\Compiler\\PGWT\\CppScheme\\Data\\input.txt");
+
+	mainloop(Env, std::cin);
 
 
-//Variable List Test
-/*
-	(*GlobalVariable)["Globalv1"] = nullptr;
-	(*GlobalVariable)["Globalv2"] = nullptr;
-	printCurrentEnv(Env);
-
-	if (1){
-		EnvTree* tmp = new EnvTree();
-		(*tmp)["localv1"] = nullptr;
-		(*tmp)["localv2"] = nullptr;
-		(*tmp)["localv3"] = nullptr;
-		auto LocalEnv1 = Env.push_front(tmp);
-		printCurrentEnv(LocalEnv1);
-		if (1){
-			EnvTree* tmp2 = new EnvTree();
-			(*tmp2)["localv4"] = nullptr;
-			(*tmp2)["localv5"] = nullptr;
-			(*tmp2)["localv6"] = nullptr;
-			auto LocalEnv2 = LocalEnv1.push_front(tmp2);
-			printCurrentEnv(LocalEnv2);
-			LocalEnv2.clearLocal();
-		}
-		printCurrentEnv(LocalEnv1);
-
-	}
-*/
 
 
-//get_token function test
-/*
-	std::ifstream inputfile;
-	#define DEBUG_TOKEN
-	inputfile.open("E:\\BaiduDisk\\Code\\Compiler\\PGWT\\CppScheme\\miniScheme\\intput.mscm");
-	cur_char = inputfile.get();
-	while (cur_char != EOF) {
-	get_token(inputfile);
-	}*/
+	Env.clearLocal();
 
-	cin.get();
+	file_in.close();
 
 
 	cout << "ending construct" << endl;
-
+	_CrtDumpMemoryLeaks();
 	return 0;
 }

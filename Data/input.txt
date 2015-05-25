@@ -1,0 +1,8 @@
+(define v (+ 2 2))
+
+(define (f x)
+	(define (g a) (+ a a))
+	(g x))
+
+(define g (lambda (x) (+ x x)))
+

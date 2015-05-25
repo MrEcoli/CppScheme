@@ -17,7 +17,12 @@ namespace CppScheme{
 		_list_node() :next(nullptr), ptr_to_data(nullptr){}
 		_list_node(T* ptr) :ptr_to_data(ptr), next(nullptr){}
 		~_list_node(){
-			delete ptr_to_data;
+			if (ptr_to_data){
+				for (auto iter = ptr_to_data->begin(); iter != ptr_to_data->end(); ++iter) {
+					delete iter->second;
+				}
+				delete ptr_to_data;
+			}
 		}
 	};
 

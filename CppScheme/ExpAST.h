@@ -10,8 +10,6 @@
 #include "build_in.h"
 using namespace CppScheme;
 
-
-
 namespace CppScheme{
 	class BuiltIn;
 
@@ -19,34 +17,30 @@ namespace CppScheme{
 	public:
 		typedef std::map<std::string, Object*> EnvTree;
 		typedef slist<EnvTree> EnvTreeList;
+
 		virtual Object* eval(EnvTreeList) = 0;
 		virtual ~ExpAST(){}
 	};
 
 
-	//最为简单的表达式
-	//如直接给出一个数值
-	//或是直接给予一个Procedure
+	//Simple ExpAST
+	//represent the DoubleValue;
 	class SimpleExp :public ExpAST{
 	public:
 		Object* obj;
 		SimpleExp(Object* _obj) :obj(_obj){}
 		SimpleExp() :obj(nullptr){}
 		Object* eval(EnvTreeList){ return obj; }
-		~SimpleExp(){
-			delete obj;
-		}
+		~SimpleExp(){}
 	};
 
 
 	//一个表示仅有变量名称的表达式
 	//它的codgen将会在给予它的Envtreelist中查找它的Object
-	//它不负责local enviroment的销毁，只负责保存变量和查找
-	//local envriment 将会是引用类型的
 	class VariableExp :public ExpAST{
 	public:
 		std::string var_name;
-		VariableExp(std::string _name ) :var_name(_name){}
+		VariableExp(std::string _name) :var_name(_name){}
 		Object* eval(EnvTreeList) override;
 	};
 
@@ -59,20 +53,34 @@ namespace CppScheme{
 		ExpAST* func;
 		std::vector<ExpAST*> parameters;
 		Object* eval(EnvTreeList) override;
+		~CallProcedureExp() override;
 	};
 
 
 
+	//define variable syntax
+	//		(define   variable_name   one_expression )
 
-	//define语句产生的ExpAST
-	//define语句不是一个终结语句，define后可能紧跟着其他的ExpAST
-	class DefineExp :public ExpAST{
+	class DefineVariableExp :public ExpAST{
 	public:
-		std::string name;
-		ExpAST* expr;
-		ExpAST* next;
-		DefineExp() :next(nullptr){}
+		std::string _name;
+		ExpAST* _expr;
 		Object* eval(EnvTreeList) override;
+		virtual ~DefineVariableExp(){
+			delete _expr;
+		}
+	};
+
+	//define procedure expression
+	// define a variable or function is different;
+	//		(define   (func args...) (expr1) (expr2) (expr3) .... (expr n) )
+	class DefineProcedureExp :public ExpAST{
+	public:
+		std::string _name;
+		std::vector<std::string> _args;
+		std::vector<ExpAST*> exprs;
+		Object* eval(EnvTreeList) override;
+		virtual ~DefineProcedureExp() { };
 	};
 
 
@@ -82,6 +90,11 @@ namespace CppScheme{
 		ExpAST* ifexp, *thenexp, *elseexp;
 
 		Object* eval(EnvTreeList)override;
+		virtual ~IfelseExp(){
+			delete ifexp;
+			delete thenexp;
+			delete elseexp;
+		}
 	};
 
 
@@ -90,7 +103,7 @@ namespace CppScheme{
 	class ProcedureExp :public ExpAST{
 	public:
 		std::vector<std::string> args;
-		ExpAST* expr;
+		std::vector<ExpAST*> exprs;
 		Object* eval(EnvTreeList) override;
 	};
 
@@ -98,17 +111,17 @@ namespace CppScheme{
 	class CondExp :public ExpAST{
 	public:
 		std::vector<ExpAST*> conds;
-		std::vector<ExpAST*> rets;
+		std::vector<std::vector<ExpAST*>> rets;
 		Object* eval(EnvTreeList) override;
 	};
 
 	//根据var_name在EnvTree中查找Object*;
-	Object* VariableExp::eval(EnvTreeList local_env){
+	Object* VariableExp::eval(EnvTreeList env){
 		//std::cout << "var_name is " << var_name << std::endl;
-		auto cur_env = local_env.head;
+		auto cur_env = env.head;
 		while (cur_env) {
 			auto iter = cur_env->ptr_to_data->find(var_name);
-			if (iter != cur_env->ptr_to_data->end ()){
+			if (iter != cur_env->ptr_to_data->end()){
 				return iter->second;
 			}
 			cur_env = cur_env->next;
@@ -118,9 +131,9 @@ namespace CppScheme{
 		return nullptr;
 	}
 
-	
+
 	Object* CallProcedureExp::eval(EnvTreeList env){
-				
+
 		//首先判断是否为内置函数
 		//内置函数被注册在Globalvariable的map中，它们为重载了operator()的类，它们与Object类中间有一个BuiltIn 抽象基类的中间层
 		if (VariableExp* var = dynamic_cast<VariableExp*>(func)){
@@ -138,9 +151,9 @@ namespace CppScheme{
 
 		}
 
-		if (Procedure* proc = dynamic_cast<Procedure*>(func->eval (env))){
-			
-			if (proc->args.size () != parameters.size ()){
+		if (Procedure* proc = (Procedure*)(func->eval(env))){
+
+			if (proc->args.size() != parameters.size()){
 				std::cerr << "invalid procedure call, incompatible aguments number, expect aguments number" << proc->args.size() << ", give paramenters " << parameters.size() << std::endl;
 				return nullptr;
 			}
@@ -149,17 +162,30 @@ namespace CppScheme{
 			EnvTree* localvariable = new EnvTree();
 			EnvTreeList local_env = env.push_front(localvariable);
 
-			
+
 			size_t args_number = parameters.size();
 
 			//??
 			for (size_t i = 0; i != args_number; ++i) {
-				(*localvariable)[proc->args[i]] = (this->parameters)[i]->eval(env);
+
+				if (Object* p = (this->parameters)[i]->eval(env)){
+					(*localvariable)[proc->args[i]] = p;
+				}
+				else{
+					std::cerr << "Error in parameter eval" << std::endl;
+					return nullptr;
+				}
 			}
 
-			Object* ret = proc->expr->eval(local_env);
-			
+			int expr_number = proc->exprs.size();
+			Object* ret = nullptr;
+
+			for (int i = 0; i < expr_number; ++i) {
+				ret = proc->exprs[i]->eval(local_env);
+			}
+
 			local_env.clearLocal();
+
 			return ret;
 		}
 		else{
@@ -168,16 +194,25 @@ namespace CppScheme{
 		}
 	}
 
-	Object* DefineExp::eval(EnvTreeList env){
-		Object* ret = this->expr->eval(env);
+	Object* DefineVariableExp::eval(EnvTreeList env){
+		Object* ret = this->_expr->eval(env);
 
-		(*env.head->ptr_to_data)[this->name] = ret;
+		if (ret){
+			
+			auto iter = env.head->ptr_to_data->find(this->_name);
 
-		if (next){
-			return next->eval(env);
+			if (iter != env.head->ptr_to_data->end ()){
+				delete iter->second;
+				iter->second = ret;
+			}
+			else{
+				(*env.head->ptr_to_data)[this->_name] = ret;
+			}
 		}
-		else
-			return nullptr;
+		else{
+			std::cerr << "Invalid expression in DefineVariableExp" << std::endl;
+		}
+		return nullptr;
 	}
 
 	static bool eval_boolean(ExpAST* ifexp, bool& res, EnvTreeList env);
@@ -185,7 +220,7 @@ namespace CppScheme{
 
 		bool res = true;
 
-		if (!eval_boolean (this->ifexp, res, env)){
+		if (!eval_boolean(this->ifexp, res, env)){
 			std::cerr << "invalid condition expression" << std::endl;
 			return nullptr;
 		}
@@ -207,13 +242,22 @@ namespace CppScheme{
 			std::cerr << "Invalid CondExp conditons" << std::endl;
 			return nullptr;
 		}
-
+		Object *final_result = nullptr;
 		bool condBool = true;
 		for (size_t idx = 0; idx != n - 1; ++idx) {
 			if (eval_boolean(conds[idx], condBool, env)){
 				if (condBool){
 					std::cout << "true" << std::endl;
-					return rets[idx]->eval(env);
+					int expr_number = rets[idx].size();
+					if (expr_number == 0){
+						std::cout << "Error cond expression return" << std::endl;
+						return nullptr;
+					}
+
+					for (int i = 0; i < expr_number; ++i) {
+						final_result = rets[idx][i]->eval(env);
+					}
+					return final_result;
 				}
 			}
 			else{
@@ -221,7 +265,14 @@ namespace CppScheme{
 				return nullptr;
 			}
 		}
-		return rets.back()->eval(env);
+
+		int expr_number = rets.back().size();
+
+		for (int i = 0; i < expr_number; ++i) {
+			final_result = rets.back()[i]->eval(env);
+		}
+
+		return final_result;
 	}
 
 
@@ -236,7 +287,7 @@ namespace CppScheme{
 		}
 
 		bool condBool = true;
-		
+
 		res = true;
 
 		if (BoolValue* ptr = dynamic_cast<BoolValue*>(cond)){
@@ -267,8 +318,38 @@ namespace CppScheme{
 	Object* ProcedureExp::eval(EnvTreeList env){
 		Procedure* ret = new Procedure();
 		ret->args = this->args;
-		ret->expr = this->expr;
+		ret->exprs = this->exprs;
 		return ret;
+	}
+
+
+	Object* DefineProcedureExp::eval(EnvTreeList env){
+		Procedure *proc = new Procedure();
+		proc->args = this->_args;
+		proc->exprs = this->exprs;
+		
+		auto iter = env.head->ptr_to_data->find(_name);
+
+		if (iter != env.head->ptr_to_data->end ()){
+			delete iter->second;
+			iter->second = proc;
+		}
+		else{
+			(*env.head->ptr_to_data)[_name] = proc;
+		}
+
+		return nullptr;
+	}
+
+
+	CallProcedureExp::~CallProcedureExp(){
+
+			delete func;
+
+		//parameter ExpAST*的删除同func是类似的，删除临时的ExpAST，从局部环境中提取而得到的变量则交由EnvTree管理
+		for (size_t i = 0; i != this->parameters.size(); ++i) {
+			delete parameters[i];
+		}
 	}
 
 }

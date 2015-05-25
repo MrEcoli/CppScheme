@@ -13,15 +13,15 @@
 #include <iosfwd>
 //... etc
 #else 
-#define DEBUG_STDERR_TOKEN_TOKEN(x)
-#define DEBUG_STDOUT_TOKEN(x)
+#define DEBUG_STDERR_TOKEN_TOKEN(x, y)
+#define DEBUG_STDOUT_TOKEN(x, y)
 //... etc
 #endif
 
 enum TOKEN{
 
 	IDENTIFIER = 1,
-	DOUBLE,
+	NUMBER,
 	INTEGER,
 
 
@@ -78,6 +78,7 @@ void push(TOKEN _tok){
 static TOKEN get_token(std::istream &input){
 	if (push_token){
 		push_token = false;
+		current_tok = token_pushed;
 		return token_pushed;
 	}
 
@@ -85,6 +86,9 @@ static TOKEN get_token(std::istream &input){
 		//重构，以switch语句替代ifelse
 		switch (cur_char)
 		{
+		case EOF:
+			std::cout << "EOF" << std::endl;
+			return TOKEN::TEOF;
 		case ' ':
 		case '\t':
 		case '\r':
@@ -138,7 +142,7 @@ static TOKEN get_token(std::istream &input){
 			if (isNumber){
 				DEBUG_STDOUT_TOKEN(tmp, "TOKEN::DOUBLE");
 				current_double = stod(tmp);
-				return TOKEN::DOUBLE;
+				return TOKEN::NUMBER;
 			}
 			else{
 				DEBUG_STDOUT_TOKEN(tmp, "TOKEN::IDENTIFIER");
