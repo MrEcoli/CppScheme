@@ -5,18 +5,7 @@
 #include <string>
 #include "Object.h"
 #include <cctype>
-
-#ifdef DEBUG_TOKEN
-#include <iostream>
-#define DEBUG_STDERR_TOKEN_TOKEN(x, y) (std::cerr <<"current TOKEN is " << (x) << " "<< y<< "\n");
-#define DEBUG_STDOUT_TOKEN(x, y) (std::cout <<"current TOKEN is " << (x) << " "<< y<< "\n");
-#include <iosfwd>
-//... etc
-#else 
-#define DEBUG_STDERR_TOKEN_TOKEN(x, y)
-#define DEBUG_STDOUT_TOKEN(x, y)
-//... etc
-#endif
+#include "Debug.h"
 
 enum TOKEN{
 
@@ -33,15 +22,7 @@ enum TOKEN{
 	ELSE,
 	LET,
 
-	//基本操作符
-	/*ADD,
-	SUB,
-	MUL,
-	DIV,
-
-	LESS,
-	GREATER,
-	EQUAL,*/
+	EXIT,
 
 	//左右括号
 	LBRACE,
@@ -78,8 +59,7 @@ void push(TOKEN _tok){
 static TOKEN get_token(std::istream &input){
 	if (push_token){
 		push_token = false;
-		current_tok = token_pushed;
-		return token_pushed;
+		return current_tok = token_pushed;
 	}
 
 	while (1){
@@ -88,7 +68,7 @@ static TOKEN get_token(std::istream &input){
 		{
 		case EOF:
 			std::cout << "EOF" << std::endl;
-			return TOKEN::TEOF;
+			return current_tok = TOKEN::TEOF;
 		case ' ':
 		case '\t':
 		case '\r':
@@ -102,14 +82,14 @@ static TOKEN get_token(std::istream &input){
 		case '(':
 			DEBUG_STDOUT_TOKEN("", "\"(\", TOKEN::LBRACE");
 			cur_char = input.get();
-			return TOKEN::LBRACE;
+			return current_tok = TOKEN::LBRACE;
 		case ')':
 			DEBUG_STDOUT_TOKEN("", "\")\", TOKEN::RBRACE");
 			cur_char = input.get();
-			return TOKEN::RBRACE;
+			return current_tok = TOKEN::RBRACE;
 		case ';':		//comment begin;
 			DEBUG_STDOUT_TOKEN("", "\";\", Comment");
-			while (cur_char != '\n') {
+			while (cur_char != '\n' && cur_char != EOF) {
 				cur_char = input.get();
 			}
 			break;
@@ -142,12 +122,12 @@ static TOKEN get_token(std::istream &input){
 			if (isNumber){
 				DEBUG_STDOUT_TOKEN(tmp, "TOKEN::DOUBLE");
 				current_double = stod(tmp);
-				return TOKEN::NUMBER;
+				return current_tok = TOKEN::NUMBER;
 			}
 			else{
 				DEBUG_STDOUT_TOKEN(tmp, "TOKEN::IDENTIFIER");
 				current_identifer = tmp;
-				return TOKEN::IDENTIFIER;
+				return current_tok = TOKEN::IDENTIFIER;
 			}
 		}
 		default:
@@ -161,179 +141,36 @@ static TOKEN get_token(std::istream &input){
 
 				if (tmp == "define"){
 					DEBUG_STDOUT_TOKEN(tmp, "TOKEN::DEFINE");
-					return TOKEN::DEFINE;
+					return current_tok = TOKEN::DEFINE;
 				}
 				else if (tmp == "if"){
 					DEBUG_STDOUT_TOKEN(tmp, "TOKEN::IF");
-					return TOKEN::IF;
+					return current_tok = TOKEN::IF;
 				}
 				else if (tmp == "cond"){
 					DEBUG_STDOUT_TOKEN(tmp, "TOKEN::COND");
-					return TOKEN::COND;
+					return current_tok = TOKEN::COND;
 				}
 				else if (tmp == "else"){
 					DEBUG_STDOUT_TOKEN(tmp, "TOKEN::ELSE");
-					return TOKEN::ELSE;
+					return current_tok = TOKEN::ELSE;
 				}
 				else if (tmp == "lambda"){
 					DEBUG_STDOUT_TOKEN(tmp, "TOKEN::LAMBDA");
-					return TOKEN::LAMBDA;
+					return current_tok = TOKEN::LAMBDA;
+				}
+				else if (tmp == "exit" || tmp == "EXIT"){
+					DEBUG_STDOUT_TOKEN(tmp, "TOKEN::EXIT");
+					return current_tok = TOKEN::EXIT;
 				}
 				DEBUG_STDOUT_TOKEN(tmp, "TOKEN::IDENTIFER");
-				return TOKEN::IDENTIFIER;
+				return current_tok = TOKEN::IDENTIFIER;
 			}
 			else
 				DEBUG_STDOUT_TOKEN(cur_char, "TOKEN::UNKNOWN");
 			cur_char = input.get();
-			return TOKEN::UNKNOWN;
+			return current_tok = TOKEN::UNKNOWN;
 		}
-
-
-		/*
-				if (cur_char == ' ' || cur_char == '\t' ||cur_char == '\r'){
-				cur_char = input.get();
-				continue;
-				}
-				else if (cur_char == '\n'){
-				DEBUG_STDOUT_TOKEN("\\n");
-				++current_line_number;
-				cur_char = input.get();
-				continue;
-				}
-				else if (cur_char == '('){
-				DEBUG_STDOUT_TOKEN(cur_char);
-				cur_char = input.get();
-				return current_tok = TOKEN::LBRACE;
-				}
-				else if (cur_char == ')'){
-				DEBUG_STDOUT_TOKEN(cur_char);
-				cur_char = input.get();
-				return current_tok = TOKEN::RBRACE;
-				}
-				//eat comment
-				else if (cur_char == ';'){
-
-				while (cur_char != '\n') {
-				cur_char = input.get();
-				}
-				continue;
-				}
-				//如果目前的cur_char为数字
-				else if (isdigit(cur_char)){
-				std::string tmp;
-				int dot_number = 0;
-				char next_char;
-				while (isdigit(cur_char) || cur_char == '.') {
-				tmp += cur_char;
-				next_char = input.get();
-
-				if (cur_char == '.'){
-				++dot_number;
-				if (dot_number > 1){
-				std::cerr << "invalid double, more one dot" << std::endl;
-				DEBUG_STDOUT_TOKEN(tmp);
-				return current_tok = TOKEN::UNKNOWN;
-				}
-
-				if (!isdigit(next_char)){
-				std::cerr << "invalid number, \"find dot at the last position\"" << std::endl;
-				DEBUG_STDOUT_TOKEN(tmp);
-				return current_tok = TOKEN::UNKNOWN;
-				}
-				}
-				cur_char = next_char;
-				}
-
-				//可能是RBRACE,所以不能如此判断
-				/ *if (!isspace(next_char)){
-				std::cerr << "inviliad number, unknown end character at the end of the number" << std::endl;
-				return UNKNOWN;
-				}* /
-
-				DEBUG_STDOUT_TOKEN(tmp);
-				if (dot_number == 0){
-				current_int = std::stoi(tmp);
-				return current_tok = TOKEN::INTEGER;
-				}
-				else{
-				current_double = std::stod(tmp);
-				return current_tok = TOKEN::DOUBLE;
-				}
-				}
-				/ *else if (cur_char == '+'){
-				DEBUG_STDOUT_TOKEN(cur_char);
-				cur_char = input.get();
-				return current_tok = TOKEN::ADD;
-				}
-				else if (cur_char == '-'){
-				DEBUG_STDOUT_TOKEN(cur_char);
-				cur_char = input.get();
-				return current_tok = TOKEN::SUB;
-				}
-				else if (cur_char == '*'){
-				DEBUG_STDOUT_TOKEN(cur_char);
-				cur_char = input.get();
-				return current_tok = TOKEN::MUL;
-				}
-				else if (cur_char == '\\'){
-				DEBUG_STDOUT_TOKEN(cur_char);
-				cur_char = input.get();
-				return current_tok = TOKEN::DIV;
-				}
-				else if (cur_char == '<'){
-				DEBUG_STDOUT_TOKEN(cur_char);
-				cur_char = input.get();
-				return current_tok = TOKEN::LESS;
-				}
-				else if (cur_char == '>'){
-				DEBUG_STDOUT_TOKEN(cur_char);
-				cur_char = input.get();
-				return current_tok = TOKEN::GREATER;
-				}
-				else if (cur_char == '='){
-				DEBUG_STDOUT_TOKEN(cur_char);
-				cur_char = input.get();
-				return current_tok = TOKEN::EQUAL;
-				}* /
-				else if (is_identifier_char(cur_char)){
-				std::string name(1, cur_char);
-				cur_char = input.get();
-
-				while (is_identifier_char(cur_char) || isdigit(cur_char)) {
-				name += cur_char;
-				cur_char = input.get();
-				}
-
-				DEBUG_STDOUT_TOKEN(name);
-
-				if (name == "lambda"){
-				return current_tok = TOKEN::LAMBDA;
-				}
-				else if (name == "if"){
-				return current_tok = TOKEN::IF;
-				}
-				else if (name == "define"){
-				return current_tok = TOKEN::DEFINE;
-				}
-				else if (name == "cond"){
-				return current_tok = TOKEN::COND;
-				}
-				else if (name == "else"){
-				return current_tok = TOKEN::ELSE;
-				}
-
-				current_identifer = name;
-				return current_tok = TOKEN::IDENTIFIER;
-				}
-				else if (cur_char == EOF){
-				return current_tok = TOKEN::TEOF;
-				}
-				else{
-				DEBUG_STDOUT_TOKEN(cur_char);
-				cur_char = input.get();
-				return current_tok = TOKEN::UNKNOWN;
-				}*/
-
 
 	}
 }

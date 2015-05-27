@@ -12,16 +12,18 @@ namespace CppScheme{
 	template<typename T>
 	class _list_node{
 	public:
-		T* ptr_to_data;
+		T* ptr_to_tree;
 		_list_node<T>* next;
-		_list_node() :next(nullptr), ptr_to_data(nullptr){}
-		_list_node(T* ptr) :ptr_to_data(ptr), next(nullptr){}
+		_list_node() :next(nullptr), ptr_to_tree(nullptr){}
+		_list_node(T* ptr) :ptr_to_tree(ptr), next(nullptr){}
 		~_list_node(){
-			if (ptr_to_data){
-				for (auto iter = ptr_to_data->begin(); iter != ptr_to_data->end(); ++iter) {
-					delete iter->second;
-				}
-				delete ptr_to_data;
+			if (ptr_to_tree){
+				/*for (auto iter = ptr_to_data->begin(); iter != ptr_to_data->end(); ++iter) {
+					if (iter->second){
+						delete iter->second;
+					}
+				}*/
+				delete ptr_to_tree;
 			}
 		}
 	};
@@ -49,7 +51,7 @@ namespace CppScheme{
 
 		self push_front(T* ptr){
 			node_ptr cur = new node();
-			cur->ptr_to_data = ptr;
+			cur->ptr_to_tree = ptr;
 			cur->next = head;
 			return cur;
 		}

@@ -1,71 +1,88 @@
 //#define DEBUG_TOKEN
+/*
 #define _CRTDBG_MAP_ALLOC
+
 #ifdef _DEBUG
 #ifndef DBG_NEW
 #define DBG_NEW new ( _NORMAL_BLOCK , __FILE__ , __LINE__ )
 #define new DBG_NEW
-#endif
+
+#endif	// DBG_NEW
 #endif  // _DEBUG
 #include <stdlib.h>
-#include <crtdbg.h>
+#include <crtdbg.h>*/
 #include <iostream>
 #include <windows.h>
 #include "Parser.h"
 #include <fstream>
 #include "build_in.h"
 #include <xtree>
+#include "gc.h"
+
 using namespace CppScheme;
+
 using std::cin;
 using std::cerr;
 using std::endl;
 using std::cout;
 
-
-void printCurrentEnv(EnvTreeList& env){
-	auto cur = env.head;
-
-	while (cur) {
-		cout << "********************** current_enviroment *****************" << endl;
-		for (auto iter = cur->ptr_to_data->begin(); iter != cur->ptr_to_data->end(); ++iter) {
-			cout << iter->first << "   " << endl;
-		}
-		cur = cur->next;
-	}
-}
-
 void init(EnvTree* env);
 void release(EnvTree*);
 
 void mainloop(EnvTreeList env, std::istream& input){
-	init(GlobalVariable);
-	std::cout << "Scheme " << current_line_number << ">> ";
-	cur_char = input.get();
-	ExpAST* expr = parseExpAst(input, env);
+	while (true){
+		std::cout << "Scheme " << current_line_number << ">> ";
+		cur_char = input.get();
+		ExpAST* expr = parseExpAst(input, env);
 
-	if (expr){
-		if (Object* ret = expr->eval(env)){
-			if (DoubleValue* ptr = dynamic_cast<DoubleValue*>(ret)){
-				cout << ptr->value << endl;
+		if (expr){
+			if (expr->_exp_type == ExpAST_TYPE::EXIT_TYPE){
+				delete expr;
+				break;
 			}
-			else if (Procedure* ptr = dynamic_cast<Procedure*>(ret)){
-				if (VariableExp* var_ptr = dynamic_cast<VariableExp*>(expr)){
-					cout << "#<Procedure: " << var_ptr->var_name << ">" << endl;
+			Object* ret = expr->eval(env);
+			if (ret) {
+				switch (ret->obtype)
+				{
+				case ObjectType::BOOLOBJ:
+				{
+					BoolValue* ptr = (BoolValue*)ret;
+					if (ptr->value){
+						std::cout << "#t" << std::endl;
+					}
+					else{
+						std::wcout << "#f" << std::endl;
+					}
+					break;
 				}
-				else{
-					cout << "#<Procedure>" << endl;
+				case ObjectType::BuiltInOBJ:
+				case ObjectType::PROCEDURE:
+				{
+					if (expr->_exp_type == ExpAST_TYPE::VARIABLE_TYPE){
+						VariableExp* var_ptr = (VariableExp*)expr;
+						cout << "#<Procedure: " << var_ptr->var_name << ">" << endl;
+					}
+					else{
+						cout << "#<Procedure>" << endl;
+					}
+					break;
+				}
+				case ObjectType::DOUBLEOBJ:
+				{
+					DoubleValue* ptr = (DoubleValue*)ret;
+					cout << ptr->value << endl;
+					break;
+				}
+				default:
+					break;
 				}
 			}
-			else if (BoolValue* ptr = dynamic_cast<BoolValue*>(ret)){
-				if (ptr->value){
-					cout << "#t" << endl;
-				}
-				else{
-					cout << "#f" << endl;
-				}
-			}
-			delete ret;
+
 		}
-		delete expr;
+		if (current_tok == TOKEN::TEOF){
+			break;
+		}
+		mark_sweep();
 	}
 }
 
@@ -99,26 +116,49 @@ void release(EnvTree* env){
 	}
 }
 
-
-int main(){
-
+void init_env(){
 	GlobalVariable = new EnvTree();
 	Env = Env.push_front(GlobalVariable);
 
+	init(GlobalVariable);
+}
+
+
+void clear_env(){
+	for (auto iter = GlobalVariable->begin(); iter != GlobalVariable->end(); ++iter) {
+		if (iter->second->obtype == ObjectType::BuiltInOBJ){
+			delete iter->second;
+		}
+	}
+
+	for (auto iter = ExpAST_pool.begin(); iter != ExpAST_pool.end(); ++iter) {
+		auto ptr = iter->first;
+		delete ptr;
+	}
+
+	for (auto iter = Object_pool.begin(); iter != Object_pool.end(); ++iter) {
+		auto ptr = iter->first;
+		delete ptr;
+	}
+
+	Env.clearLocal();
+}
+
+
+int main(){
+
+	init_env();
 
 	std::ifstream file_in("E:\\BaiduDisk\\Code\\Compiler\\PGWT\\CppScheme\\Data\\input.txt");
+	//mainloop(Env, file_in);
 
 	mainloop(Env, std::cin);
 
 
-
-
-	Env.clearLocal();
-
 	file_in.close();
-
-
+	clear_env();
 	cout << "ending construct" << endl;
-	_CrtDumpMemoryLeaks();
+	
+	//_CrtDumpMemoryLeaks();
 	return 0;
 }

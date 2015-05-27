@@ -33,6 +33,12 @@
     <ClInclude Include="build_in.h">
       <Filter>源文件</Filter>
     </ClInclude>
+    <ClInclude Include="Debug.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
+    <ClInclude Include="gc.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="miniScheme.cpp">

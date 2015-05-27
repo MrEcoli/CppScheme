@@ -49,22 +49,28 @@ void parseLetArgs(std::istream& in, EnvTreeList current_env, std::vector<std::st
 
 
 
-//解析语法
+//Main parser function
 ExpAST* parseExpAst(std::istream& in, EnvTreeList current_env, int left = 0){
 	if (left == 0){
 		TOKEN _tok = get_token(in);
 		switch (_tok)
 		{
 		case TOKEN::NUMBER:
-			return new SimpleExp(new DoubleValue(current_double));
+		{
+			SimpleExp* ret = SimpleExp::factory();
+			ret->obj = DoubleValue::factory(current_double);
+			return ret;
+		}
 		case TOKEN::IDENTIFIER:
-			return new VariableExp(current_identifer);
+			return VariableExp::factory(current_identifer);
 		case TOKEN::LBRACE:
 			return parseExpAst(in, current_env, 1);
 		case TOKEN::RBRACE:
 			return nullptr;
 		case TOKEN::ELSE:
 			return nullptr;
+		case TOKEN::EXIT:
+			return new ExitExp();
 		default:
 			std::cerr << "unknown token  " << current_line_number << std::endl;
 			return nullptr;
@@ -127,7 +133,7 @@ ExpAST* parseDefineExp(std::istream& in, EnvTreeList current_env){
 			return nullptr;
 		}
 
-		DefineProcedureExp *result = new DefineProcedureExp;
+		DefineProcedureExp *result = DefineProcedureExp::factory ();
 		result->_name = current_identifer;
 		//parse aguments
 		parseArgs(in, result->_args);
@@ -140,7 +146,7 @@ ExpAST* parseDefineExp(std::istream& in, EnvTreeList current_env){
 		return result;
 	}
 	else if (_tok == TOKEN::IDENTIFIER){
-		DefineVariableExp* result = new DefineVariableExp();
+		DefineVariableExp* result = DefineVariableExp::factory ();
 		result->_name = current_identifer;
 		result->_expr = parseExpAst(in, current_env);
 		_tok = get_token(in);
@@ -160,10 +166,10 @@ ExpAST* parseDefineExp(std::istream& in, EnvTreeList current_env){
 
 
 void parseArgs(std::istream& in, std::vector < std::string > &args){	//构建参数列表
-	//    ( arg1 arg2 arg3 ... ...)
-	//      Λ                     Λ
-	//      |                     |
-	//  function start;          eat the last brace;
+	//    ( .. arg1 arg2 arg3 ... ...)
+	//         Λ                     Λ
+	//         |                     |
+	//     function start;          eat the last brace;
 
 	TOKEN cur_token = get_token(in);
 	while (cur_token == TOKEN::IDENTIFIER) {
@@ -193,7 +199,7 @@ ExpAST* parseLambdaExp(std::istream& in, EnvTreeList current_env){
 		return nullptr;
 	}
 
-	ProcedureExp* result = new ProcedureExp();
+	ProcedureExp* result = ProcedureExp::factory ();
 	parseArgs(in, result->args);
 
 	while (ExpAST* exp = parseExpAst (in, current_env)) {
@@ -215,7 +221,7 @@ ExpAST* parseLambdaExp(std::istream& in, EnvTreeList current_env){
 //**********************************************************
 ExpAST* parseIFElseAST(std::istream& in, EnvTreeList current_env){
 
-	IfelseExp* result = new IfelseExp();
+	IfelseExp* result = IfelseExp::factory ();
 
 	result->ifexp = parseExpAst(in, current_env, 0);
 	result->thenexp = parseExpAst(in, current_env, 0);
@@ -238,7 +244,7 @@ ExpAST* parseIFElseAST(std::istream& in, EnvTreeList current_env){
 //**************************************************************************************************
 ExpAST* parseCondExp(std::istream& in, EnvTreeList current_env){
 
-	CondExp* result = new CondExp();
+	CondExp* result = CondExp::factory ();
 
 	if (!parseCondExp(in, current_env, result->conds, result->rets)){
 		return nullptr;
@@ -289,8 +295,7 @@ bool parseCondExp(std::istream& in, EnvTreeList current_env, std::vector<ExpAST*
 
 ExpAST* parseCallExp(std::istream& in, EnvTreeList current_env){
 
-	CallProcedureExp *result = new CallProcedureExp();
-
+	CallProcedureExp *result = CallProcedureExp::factory ();
 	result->func = parseExpAst(in, current_env);
 
 	if (result->func == nullptr){
@@ -319,8 +324,8 @@ ExpAST* parseCallExp(std::istream& in, EnvTreeList current_env){
 // **************************************************************************************************
 ExpAST* parseLetExp(std::istream& in, EnvTreeList current_env){
 	
-	CallProcedureExp* result = new CallProcedureExp();
-	ProcedureExp* proc = new ProcedureExp();
+	CallProcedureExp* result = CallProcedureExp::factory ();
+	ProcedureExp* proc = ProcedureExp::factory ();
 
 	parseLetArgs(in, current_env, proc->args, result->parameters);
 

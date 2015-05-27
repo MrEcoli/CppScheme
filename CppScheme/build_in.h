@@ -14,18 +14,13 @@ static EnvTreeList Env;
 static EnvTree* GlobalVariable;
 
 namespace CppScheme{
+	
+
 	class ExpAST;
 
-	static void free_memory(std::vector<Object*> &args){
-		for (size_t idx = 0; idx < args.size(); ++idx) {
-			if (args[idx]){
-				delete args[idx];
-			}
-		}
-	}
 	class BuiltIn :public Object{
 	public:
-		BuiltIn() :Object(ObjectType::PROCEDURE){}
+		BuiltIn() :Object(ObjectType::BuiltInOBJ){}
 		virtual Object* operator()(std::vector<Object*>& args) = 0;
 	};
 
@@ -37,7 +32,8 @@ namespace CppScheme{
 				std::cout << "cons operator error, illegal arguments number, expect to be 2, give " << args.size() << std::endl;
 				return nullptr;
 			}
-			return new Pair(args[0], args[1]);
+			Pair* ret = new Pair(args[0], args[1]);
+			return ret;
 		}
 	};
 
@@ -48,6 +44,7 @@ namespace CppScheme{
 				std::cout << "car operator error, illegal arguments number, expect to be 1, give " << args.size() << std::endl;
 				return nullptr;
 			}
+			//如果传递来的是临时变量，使用car后返回first
 
 			if (Pair* ptr = dynamic_cast<Pair*> (args[0])){
 				return ptr->first;
@@ -67,8 +64,12 @@ namespace CppScheme{
 				return nullptr;
 			}
 
+			//如果是临时变量，我们会返回并保存Pair中的第二个Object对象
+			//不能直接删除Pair
+			//需要删除Pair的第一个变量
+
 			if (Pair* ptr = dynamic_cast<Pair*> (args[0])){
-				return ptr->next;
+				return ptr->second;
 			}
 			else{
 				std::cout << "illegal operator, not a Pair" << std::endl;
@@ -79,7 +80,7 @@ namespace CppScheme{
 
 	class List :public BuiltIn{
 	public:
-		Object* operator()(std::vector<Object*> &args){
+		Object* operator()(std::vector<Object*>& args){
 			Pair* result = new Pair();
 			size_t n = args.size();
 			if (n == 0){
@@ -91,7 +92,7 @@ namespace CppScheme{
 			Pair* cur;
 			for (size_t idx = 1; idx != n; ++idx) {
 				cur = new Pair(args[idx], nullptr);
-				prev->next = cur;
+				prev->second = cur;
 				cur = prev;
 			}
 			return result;
@@ -114,7 +115,6 @@ namespace CppScheme{
 				ret += ((DoubleValue*)args[i])->value;
 			}
 
-			free_memory(args);
 
 			return new DoubleValue(ret);
 		}
@@ -134,7 +134,6 @@ namespace CppScheme{
 				ret -= ((DoubleValue*)args[i])->value;
 			}
 
-			free_memory(args);
 
 			return new DoubleValue(ret);
 		}
@@ -154,7 +153,7 @@ namespace CppScheme{
 				ret *= ((DoubleValue*)args[i])->value;
 			}
 
-			free_memory(args);
+			
 			return new DoubleValue(ret);
 		}
 	};
@@ -173,7 +172,7 @@ namespace CppScheme{
 			{
 				ret /= ((DoubleValue*)args[i])->value;
 			}
-			free_memory(args);
+			
 			return new DoubleValue(ret);
 		}
 	};
@@ -189,7 +188,7 @@ namespace CppScheme{
 			double v1 = ((DoubleValue*)(args[0]))->value;
 			double v2 = ((DoubleValue*)(args[1]))->value;
 
-			free_memory(args);
+			
 
 			if (v1 < v2){
 				return new BoolValue(true);
@@ -218,7 +217,7 @@ namespace CppScheme{
 						*/
 
 
-			free_memory(args);
+			
 
 			if (v1 > v2){
 				return new BoolValue(true);
@@ -241,7 +240,7 @@ namespace CppScheme{
 			Object* result2 = Less()(args);
 
 
-			free_memory(args);
+			
 
 			BoolValue * ret;
 			if (((BoolValue*)result1)->value == false && ((BoolValue*)result2)->value == false){
@@ -269,7 +268,7 @@ namespace CppScheme{
 			int v1 = ((DoubleValue*)args[0])->value;
 			int v2 = ((DoubleValue*)args[1])->value;
 
-			free_memory(args);
+			
 			return new DoubleValue(v1 % v2);
 		}
 	};
@@ -317,18 +316,18 @@ namespace CppScheme{
 			for (size_t idx = 0; idx != args.size(); ++idx) {
 				if (is_condition_true(args[idx], cur_cond)){
 					if (cur_cond){
-						free_memory(args);
+						
 						ret = new BoolValue(true);
 					}
 
 				}
 				else{
 					std::cerr << "Not valid Object " << std::endl;
-					free_memory(args);
+					
 					ret = nullptr;
 				}
 			}
-			free_memory(args);
+			
 			return new BoolValue(false);
 
 		}
@@ -346,18 +345,18 @@ namespace CppScheme{
 			for (size_t idx = 0; idx != args.size(); ++idx) {
 				if (is_condition_true(args[idx], cur_cond)){
 					if (!cur_cond){
-						free_memory(args);
+						
 						return new BoolValue(false);
 					}
 
 				}
 				else{
 					std::cerr << "Not valid Object " << std::endl;
-					free_memory(args);
+					
 					return nullptr;
 				}
 			}
-			free_memory(args);
+			
 			return new BoolValue(true);
 		}
 	};
@@ -383,7 +382,7 @@ namespace CppScheme{
 				std::cerr << "Invalid Object given" << std::endl;
 				ret = nullptr;
 			}
-			free_memory(args);
+			
 			return ret;
 		}
 	};
@@ -408,7 +407,7 @@ namespace CppScheme{
 				std::cerr << "Expected Number Object in even? operator!" << std::endl;
 				ret = nullptr;
 			}
-			free_memory(args);
+			
 			return ret;
 		}
 	};
@@ -422,12 +421,12 @@ namespace CppScheme{
 
 			if (DoubleValue* ptr = dynamic_cast<DoubleValue*>(args[0])){
 				double val = ptr->value;
-				free_memory(args);
+				
 				return new DoubleValue(val*val);
 			}
 			else{
 				std::cerr << "Expected Number Object in square operator!" << std::endl;
-				free_memory(args);
+				
 				return nullptr;
 			}
 		}
