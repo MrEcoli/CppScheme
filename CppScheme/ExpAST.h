@@ -13,10 +13,7 @@ using namespace CppScheme;
 
 namespace CppScheme{
 	class BuiltIn;
-	std::unordered_map<ExpAST*, bool> ExpAST_pool;
-
-
-
+	std::map<ExpAST*, bool> ExpAST_pool;
 
 
 	class ExitExp : public ExpAST{
@@ -41,7 +38,7 @@ namespace CppScheme{
 	class SimpleExp :public ExpAST{
 	public:
 		Object* obj;
-		SimpleExp(Object* _obj):obj(_obj), ExpAST(ExpAST_TYPE::SIMPLE_TYPE){}
+		SimpleExp(Object* _obj) :obj(_obj), ExpAST(ExpAST_TYPE::SIMPLE_TYPE){}
 		SimpleExp() :obj(nullptr), ExpAST(ExpAST_TYPE::SIMPLE_TYPE){}
 		Object* eval(EnvTreeList){ return obj; }
 		~SimpleExp(){
@@ -71,7 +68,7 @@ namespace CppScheme{
 		Object* eval(EnvTreeList);
 		~VariableExp(){}
 		virtual VariableExp* deep_copy(){
-			VariableExp* ret = VariableExp::factory (var_name);
+			VariableExp* ret = VariableExp::factory(var_name);
 			return ret;
 		}
 		static VariableExp* factory(std::string _s){
@@ -92,7 +89,7 @@ namespace CppScheme{
 		std::vector<ExpAST*> parameters;
 		Object* eval(EnvTreeList);
 		virtual CallProcedureExp* deep_copy(){
-			CallProcedureExp* ret = CallProcedureExp::factory ();
+			CallProcedureExp* ret = CallProcedureExp::factory();
 			ret->func = func->deep_copy();
 			ret->parameters = this->parameters;
 
@@ -121,7 +118,7 @@ namespace CppScheme{
 		Object* eval(EnvTreeList);
 
 		virtual ExpAST* deep_copy(){
-			DefineVariableExp* ret = DefineVariableExp::factory ();
+			DefineVariableExp* ret = DefineVariableExp::factory();
 			ret->_name = _name;
 			ret->_expr = this->_expr->deep_copy();
 			return ret;
@@ -145,7 +142,7 @@ namespace CppScheme{
 		std::vector<ExpAST*> exprs;
 		Object* eval(EnvTreeList);
 		virtual ExpAST* deep_copy(){
-			DefineProcedureExp *ret = DefineProcedureExp::factory ();
+			DefineProcedureExp *ret = DefineProcedureExp::factory();
 			ret->_name = _name;
 			ret->_args = _args;
 			ret->exprs = ret->exprs;
@@ -167,11 +164,11 @@ namespace CppScheme{
 	class IfelseExp :public ExpAST{
 	public:
 		ExpAST* ifexp, *thenexp, *elseexp;
-		IfelseExp() :ExpAST(ExpAST_TYPE::IFELSETYPE){}
+		IfelseExp() :ExpAST(ExpAST_TYPE::IFELSE_TYPE){}
 		Object* eval(EnvTreeList);
 
 		virtual ExpAST* deep_copy(){
-			IfelseExp *ret = IfelseExp::factory ();
+			IfelseExp *ret = IfelseExp::factory();
 			ret->ifexp = ifexp->deep_copy();
 			ret->thenexp = thenexp->deep_copy();
 			ret->elseexp = elseexp->deep_copy();
@@ -192,11 +189,11 @@ namespace CppScheme{
 	public:
 		std::vector<std::string> args;
 		std::vector<ExpAST*> exprs;
-		ProcedureExp() :ExpAST(ExpAST_TYPE::PROCEDURETYPE){}
+		ProcedureExp() :ExpAST(ExpAST_TYPE::PROCEDURE_TYPE){}
 		Object* eval(EnvTreeList);
 
 		virtual ExpAST* deep_copy(){
-			ProcedureExp* ret = ProcedureExp::factory ();
+			ProcedureExp* ret = ProcedureExp::factory();
 			ret->args = this->args;
 			ret->exprs = this->exprs;
 			for (size_t i = 0; i != exprs.size(); ++i) {
@@ -217,7 +214,7 @@ namespace CppScheme{
 	public:
 		std::vector<ExpAST*> conds;
 		std::vector<std::vector<ExpAST*>> rets;
-		CondExp() :ExpAST(ExpAST_TYPE::CONDEXP){}
+		CondExp() :ExpAST(ExpAST_TYPE::COND_EXP){}
 		Object* eval(EnvTreeList);
 		virtual ExpAST* deep_copy(){
 			CondExp* ret = CondExp::factory();
@@ -271,19 +268,18 @@ namespace CppScheme{
 			VariableExp* var = (VariableExp*)func;
 			auto iter = GlobalVariable->find(var->var_name);
 			if (iter != GlobalVariable->end()){
-				if (iter->second->obtype == ObjectType::BuiltInOBJ){
+				if (iter->second->obtype == ObjectType::BuiltIn_OBJ){
 					BuiltIn *_func = (BuiltIn*)(iter->second);
 					size_t n = parameters.size();
 					std::vector<Object*> args(n);
 					for (size_t i = 0; i != n; ++i) {
-							Object* tmp = parameters[i]->eval(env);
-							args[i] = tmp;
+						Object* tmp = parameters[i]->eval(env);
+						args[i] = tmp;
 					}
 					Object* ret = (*_func)(args);
 					return ret;
 				}
 			}
-
 		}
 
 		if (Procedure* proc = (Procedure*)(func->eval(env))){
@@ -336,16 +332,7 @@ namespace CppScheme{
 		Object* ret = this->_expr->eval(env);
 
 		if (ret){
-
-			auto iter = env.head->ptr_to_tree->find(this->_name);
-
-			if (iter != env.head->ptr_to_tree->end()){
-				delete iter->second;
-				iter->second = ret;
-			}
-			else{
-				(*env.head->ptr_to_tree)[this->_name] = ret;
-			}
+			(*env.head->ptr_to_tree)[this->_name] = ret;
 		}
 		else{
 			std::cerr << "Invalid expression in DefineVariableExp" << std::endl;
@@ -429,33 +416,47 @@ namespace CppScheme{
 
 		res = true;
 
-		if (BoolValue* ptr = dynamic_cast<BoolValue*>(cond)){
-			if (ptr->value){
-				std::cout << "Condition is true" << std::endl;
-			}
-
+		switch (cond->obtype)
+		{
+		case ObjectType::BOOL_OBJ:
+		{
+			BoolValue* ptr = (BoolValue*)cond;
 			if (!ptr->value){
 				res = false;
 			}
+			break;
 		}
-		else if (DoubleValue* ptr = dynamic_cast<DoubleValue*>(cond)){
+		case ObjectType::INTEGER_OBJ:
+		{
+			IntegerValue* ptr = (IntegerValue*)cond;
 			if (ptr->value == 0){
 				res = false;
 			}
+			break;
 		}
-		else if (Procedure* ptr = dynamic_cast<Procedure*>(cond)){
+		case ObjectType::DOUBLE_OBJ:
+		{
+			DoubleValue* ptr = (DoubleValue*)cond;
+			if (ptr->value == 0){
+				res = false;
+			}
+			break;
+		}
+		case ObjectType::PROCEDURE_OBJ:
+		{
 			res = true;
+			break;
 		}
-		else{
+		default:
 			return false;
+			break;
 		}
-
 		return true;
 
 	}
 
 	Object* ProcedureExp::eval(EnvTreeList env){
-		Procedure* ret = Procedure::factory ();
+		Procedure* ret = Procedure::factory();
 		ret->args = this->args;
 		ret->exprs = this->exprs;
 		return ret;
@@ -463,45 +464,14 @@ namespace CppScheme{
 
 
 	Object* DefineProcedureExp::eval(EnvTreeList env){
-		Procedure *proc = Procedure::factory ();
+		Procedure *proc = Procedure::factory();
 		proc->args = this->_args;
 		proc->exprs = this->exprs;
 
-		auto iter = env.head->ptr_to_tree->find(_name);
-
-		if (iter != env.head->ptr_to_tree->end()){
-			delete iter->second;
-			iter->second = proc;
-		}
-		else{
-			(*env.head->ptr_to_tree)[_name] = proc;
-		}
+		(*env.head->ptr_to_tree)[_name] = proc;
 
 		return nullptr;
 	}
-
-
-	/*CallProcedureExp::~CallProcedureExp(){
-
-		_DEBUG_DESTRUCTOR("CallProcedureExp destructor function");
-
-
-		delete func;
-
-		//parameter ExpAST*的删除同func是类似的，删除临时的ExpAST，从局部环境中提取而得到的变量则交由EnvTree管理
-
-		for (size_t i = 0; i != this->parameters.size(); ++i) {
-			delete parameters[i];
-		}
-	}*/
-
-	/*Procedure::~Procedure() {
-		_DEBUG_DESTRUCTOR("Procedure Object Destructor");
-		for (size_t idx = 0; idx < exprs.size(); ++idx) {
-			delete exprs[idx];
-		}
-	}*/
-
 
 }
 

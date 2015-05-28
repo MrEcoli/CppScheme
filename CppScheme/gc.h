@@ -20,11 +20,10 @@ namespace CppScheme{
 
 		for (auto iter = GlobalVariable->begin(); iter != GlobalVariable->end(); ++iter) {
 			//不处理BuiltIn function
-			if (iter->second && iter->second->obtype != ObjectType::BuiltInOBJ){
+			if (iter->second && iter->second->obtype != ObjectType::BuiltIn_OBJ){
 				dfs_object(iter->second, exp_visited, obj_visited);
 			}
 		}
-
 
 		for (auto iter = Object_pool.begin(); iter != Object_pool.end();) {
 			if (!iter->second){
@@ -58,9 +57,11 @@ namespace CppScheme{
 
 		switch (cur_obj->obtype)
 		{
-		case ObjectType::DOUBLEOBJ:
+		case ObjectType::DOUBLE_OBJ:
 			break;
-		case ObjectType::PROCEDURE:
+		case ObjectType::INTEGER_OBJ:
+			break;
+		case ObjectType::PROCEDURE_OBJ:
 		{
 			Procedure* proc = (Procedure*)cur_obj;
 			for (size_t i = 0; i != proc->exprs.size(); ++i) {
@@ -72,9 +73,9 @@ namespace CppScheme{
 			}
 			break;
 		}
-		case ObjectType::BOOLOBJ:
+		case ObjectType::BOOL_OBJ:
 			break;
-		case ObjectType::PAIROBJ:
+		case ObjectType::PAIR_OBJ:
 		{
 			Pair* p = (Pair*)cur_obj;
 			//确认序对指向的对象未访问过才进行搜索
@@ -124,7 +125,7 @@ namespace CppScheme{
 
 			break;
 		}
-		case ExpAST_TYPE::CONDEXP:
+		case ExpAST_TYPE::COND_EXP:
 		{
 			CondExp* ptr = (CondExp*)cur_expast;
 			for (auto exp : ptr->conds) {
@@ -163,7 +164,7 @@ namespace CppScheme{
 			}
 			break;
 		}
-		case ExpAST_TYPE::IFELSETYPE:
+		case ExpAST_TYPE::IFELSE_TYPE:
 		{
 			IfelseExp* ptr = (IfelseExp*)cur_expast;
 
@@ -181,7 +182,7 @@ namespace CppScheme{
 
 			break;
 		}
-		case ExpAST_TYPE::PROCEDURETYPE:
+		case ExpAST_TYPE::PROCEDURE_TYPE:
 		{
 			ProcedureExp* ptr = (ProcedureExp*)cur_expast;
 

@@ -20,7 +20,6 @@
 #include <iostream>
 #define DEBUG_STDERR_TOKEN_TOKEN(x, y) (std::cerr <<"current TOKEN is " << (x) << " "<< y<< "\n");
 #define DEBUG_STDOUT_TOKEN(x, y) (std::cout <<"current TOKEN is " << (x) << " "<< y<< "\n");
-#include <iosfwd>
 //... etc
 #else 
 #define DEBUG_STDERR_TOKEN_TOKEN(x, y)

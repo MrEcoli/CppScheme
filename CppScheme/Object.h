@@ -12,15 +12,21 @@ namespace CppScheme{
 	class ExpAST;
 	class Object;
 
-	std::unordered_map<Object*, bool> Object_pool;
+	std::map<Object*, bool> Object_pool;
 
 	enum ObjectType{
-		PROCEDURE = 1,
-		DOUBLEOBJ,
-		BOOLOBJ,
-		PAIROBJ,
-		BuiltInOBJ,
+		PROCEDURE_OBJ = 1,
+		DOUBLE_OBJ,
+		INTEGER_OBJ,
+		STRING_OBJ,
+		BOOL_OBJ,
+		PAIR_OBJ,
+		BuiltIn_OBJ,
+		NULL_OBJ,
+		CHAR_OBJ,
+		VECTOR_OBJ,
 	};
+
 	enum ExpAST_TYPE{
 		EXIT_TYPE,
 		SIMPLE_TYPE,
@@ -28,9 +34,9 @@ namespace CppScheme{
 		CALLPROCEDURE_TYPE,
 		DEFINEPROCEDURE_TYPE,
 		DEFINEVARIABLE_TYPE,
-		IFELSETYPE,
-		PROCEDURETYPE,
-		CONDEXP,
+		IFELSE_TYPE,
+		PROCEDURE_TYPE,
+		COND_EXP,
 	};
 
 	class Object{
@@ -42,7 +48,11 @@ namespace CppScheme{
 		virtual Object* deep_copy(){
 			return this;
 		};
+		virtual std::string to_string(){
+			return std::string();
+		}
 	};
+
 	class ExpAST{
 	public:
 		typedef std::map<std::string, Object*> EnvTree;
@@ -58,19 +68,37 @@ namespace CppScheme{
 	};
 
 
+	class IntegerValue :public Object{
+	public:
+		int value;
+		IntegerValue() :Object(ObjectType::INTEGER_OBJ){}
+		IntegerValue(int _v) :value(_v), Object(ObjectType::INTEGER_OBJ){}
+		virtual Object* deep_copy(){ return IntegerValue::factory(value); }
+		static IntegerValue* factory(int _v){
+			IntegerValue* ret = new IntegerValue(_v);
+			Object_pool[ret] = false;
+			return ret;
+		}
+		virtual std::string to_string(){
+			return std::to_string(static_cast<long long>(value));
+		}
+	};
 
 
 	class DoubleValue :public Object{
 	public:
 		double value;
-		DoubleValue() :Object(ObjectType::DOUBLEOBJ){}
-		DoubleValue(double _V) :value(_V), Object(ObjectType::DOUBLEOBJ){}
+		DoubleValue() :Object(ObjectType::DOUBLE_OBJ){}
+		DoubleValue(double _V) :value(_V), Object(ObjectType::DOUBLE_OBJ){}
 
 		virtual Object* deep_copy(){ return DoubleValue::factory (value); }
 		static DoubleValue* factory(double _v){
 			DoubleValue* ret = new DoubleValue(_v);
 			Object_pool[ret] = false;
 			return ret;
+		}
+		virtual std::string to_string(){
+			return std::to_string(value);
 		}
 	};
 
@@ -79,12 +107,15 @@ namespace CppScheme{
 	//为了简化程序，所有的数值以double类型表示
 	class Variable :public Object{
 		std::string name;
-		Variable(std::string s = std::string("")) :name(s),  Object(DOUBLEOBJ){}
+		Variable(std::string s = std::string("")) :name(s),  Object(DOUBLE_OBJ){}
 		virtual Object* deep_copy(){ return Variable::factory (name); }
 		static Variable* factory(std::string _name){
 			Variable *ret = new Variable(_name);
 			Object_pool[ret] = false;
 			return ret;
+		}
+		virtual std::string to_string(){
+			return name;
 		}
 
 	};
@@ -96,7 +127,7 @@ namespace CppScheme{
 	public:
 		std::vector < std::string > args;
 		std::vector<ExpAST*> exprs;
-		Procedure() :Object(ObjectType::PROCEDURE){}
+		Procedure() :Object(ObjectType::PROCEDURE_OBJ){}
 		virtual Object* deep_copy(){
 			Procedure* ret = Procedure::factory ();
 			ret->args = this->args;
@@ -112,6 +143,9 @@ namespace CppScheme{
 			Object_pool[ret] = false;
 			return ret;
 		}
+		virtual std::string to_string(){
+			return std::string("#<procedure>");
+		}
 	};
 	
 
@@ -119,13 +153,22 @@ namespace CppScheme{
 	class BoolValue :public Object{
 	public:
 		bool value;
-		BoolValue() :Object(ObjectType::BOOLOBJ){}
-		BoolValue(bool _bb) :value(_bb), Object(ObjectType::BOOLOBJ){}
+		BoolValue() :Object(ObjectType::BOOL_OBJ){}
+		BoolValue(bool _bb) :value(_bb), Object(ObjectType::BOOL_OBJ){}
 		virtual Object* deep_copy(){ return BoolValue::factory (this->value); }
 		static BoolValue* factory(bool _v){
 			BoolValue* ret = new BoolValue(_v);
 			Object_pool[ret] = false;
 			return ret;
+		}
+
+		virtual std::string to_string(){
+			if (value){
+				return "#t";
+			}
+			else{
+				return "#f";
+			}
 		}
 	};
 
@@ -136,8 +179,8 @@ namespace CppScheme{
 	public:
 		Object *first;
 		Object *second;
-		Pair() :Object(ObjectType::PAIROBJ), first(nullptr), second(nullptr){}
-		Pair(Object* _x, Object* _y) :first(_x), second(_y), Object(ObjectType::PAIROBJ){}
+		Pair() :Object(ObjectType::PAIR_OBJ), first(nullptr), second(nullptr){}
+		Pair(Object* _x, Object* _y) :first(_x), second(_y), Object(ObjectType::PAIR_OBJ){}
 				
 		virtual Object* deep_copy(){
 			Pair *ret = Pair::factory();
@@ -145,11 +188,39 @@ namespace CppScheme{
 			ret->second = second->deep_copy();
 			return ret;
 		}
+
 		static Pair* factory(){
 			Pair* ret = new Pair();
 			Object_pool[ret] = false;
 			return ret;
 		}
+		static Pair* factory(Object* _x, Object* _y){
+			Pair* ret = new Pair(_x, _y);
+			Object_pool[ret] = false;
+			return ret;
+		}
+
+		virtual std::string to_string(){
+			return "(" + to_string_no_brace() + ")";
+		}
+		
+		std::string to_string_no_brace(){
+			std::string s1, s2;
+			std::string result;
+			if (first){
+				s1 = first->to_string();
+			}
+			if (second){
+				if (second->obtype == ObjectType::PAIR_OBJ){
+					s2 = " " + ((Pair*)second)->to_string_no_brace();
+				}
+				else{
+					s2 = " . " + second->to_string();
+				}
+			}
+			return result = s1 + s2;
+		}
+
 	};
 
 }

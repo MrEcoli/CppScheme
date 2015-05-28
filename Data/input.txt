@@ -1,14 +1,81 @@
+(define a (list 1 2 3 4 33 44 55 33 123 2 231  2 22 3 12 3))
+a
+(define a (list 333 444))
+a
+(define b (list 1 2 3 4 33 44 55 33 123 2 231  2 22 3 12 3))
+a
+(define c (list 333 444))
+a
+(define d (list 1 2 3 4 33 44 55 33 123 2 231  2 22 3 12 3))
+a
+(define e (list 333 444))
+a
+(define f (list 1 2 3 4 33 44 55 33 123 2 231  2 22 3 12 3))
+a
+(define b (list 333 444))
+a
+(define c (list 1 2 3 4 33 44 55 33 123 2 231  2 22 3 12 3))
+a
+(define d (list 333 444))
+a
+(define e (list 1 2 3 4 33 44 55 33 123 2 231  2 22 3 12 3))
+a
+(define f (list 333 444))
+a
+(define x (list 1 2 3 4 33 44 55 33 123 2 231  2 22 3 12 3))
+a
+(define y (list 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444 333 444))
+a
+(define z (list 1 2 3 4 33 44 55 33 123 2 231  2 22 3 12 3 1 2 3 4 33 44 55 33 123 2 231  2 22 3 12 3))
+a
+(define i (list 333 444))
+a
+exit
+
+
+
+
+
+(define (expmod base exp m)
+	(cond ((< exp 1) 1)
+		((even? exp)
+			(remainder (expmod base (/ exp 2) m) m))
+		(else
+			(remainder (* base (expmod base (- exp 1) m)) m))))
+(expmod 2 10 11)
+exit
+
+
+(define (fermat-test n) 
+  (define (try-it a)
+    (= (expmod a n n) a))
+  (try-it (+ 1 (random (- n 1)))))
+
+(fermat-test 10)
+
+
 (define x 10)
+(define x 4)
 
-(define a (cons 1 2))
+(define (fib n)
+  (fib-iter 1 0 0 1 n))
+ 
+(define (fib-iter a b p q count)
+  (cond ((< count 1) b)
+        ((even? count)
+         (fib-iter a
+                   b
+                   (+ (square p) (square q))  ; p'
+                   (+ (* 2 p q)  (square q))  ; q'
+                   (/ count 2)))
+        (else (fib-iter (+ (* b q) (* a q) (* a p))
+                        (+ (* b p) (* a q))
+                        p
+                        q
+                        (- count 1)))))
 
-(define (f x) (+ x x))
+;(define (gcd a b) (if (< b 1) a (gcd b (remainder a b))))
 
-(define (f x)	(define (g y) (+ y y))	(g x))
-
-;(define g (lambda (x) (+ x x)))
-
-(f 10)
-
+;(define (f x) (define (g n) (+ n n)) (g x))
 
 ;(define (f x) 	(cond ((< x 3) (display 3) (+ 3 3)) ((> x 10) (display 10) (+ 10 10)) (else (display x) (+ x x))))

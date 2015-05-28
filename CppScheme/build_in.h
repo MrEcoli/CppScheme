@@ -5,6 +5,8 @@
 #include <map>
 #include "Object.h"
 #include "slist.h"
+#include <random>
+#include <time.h>
 using namespace CppScheme;
 
 typedef std::map<std::string, Object*> EnvTree;
@@ -14,14 +16,38 @@ static EnvTreeList Env;
 static EnvTree* GlobalVariable;
 
 namespace CppScheme{
-	
+
 
 	class ExpAST;
 
 	class BuiltIn :public Object{
 	public:
-		BuiltIn() :Object(ObjectType::BuiltInOBJ){}
+		BuiltIn() :Object(ObjectType::BuiltIn_OBJ){}
 		virtual Object* operator()(std::vector<Object*>& args) = 0;
+
+		static double get_value(Object* _obj){
+			switch (_obj->obtype)
+			{
+			case ObjectType::INTEGER_OBJ:
+				return ((IntegerValue*)_obj)->value;
+			case ObjectType::DOUBLE_OBJ:
+				return ((DoubleValue*)_obj)->value;
+			case ObjectType::BOOL_OBJ:
+			{
+				BoolValue* ptr = (BoolValue*)_obj;
+				if (ptr->value){
+					return 1;
+				}
+				else{
+					return 0;
+				}
+
+			}
+			default:
+				std::cerr << "Invalid operator in Builitin function" << std::endl;
+				return 0;
+			}
+		}
 	};
 
 
@@ -32,10 +58,97 @@ namespace CppScheme{
 				std::cout << "cons operator error, illegal arguments number, expect to be 2, give " << args.size() << std::endl;
 				return nullptr;
 			}
-			Pair* ret = new Pair(args[0], args[1]);
+			Pair* ret = Pair::factory(args[0], args[1]);
 			return ret;
 		}
 	};
+
+
+	class IsPair :public BuiltIn{
+	public:
+		Object* operator()(std::vector<Object*>& args){
+			if (args.size () < 1){
+				std::cerr << "pair? operator error, illegal arguments number, expect more than 1, give " << args.size() << std::endl;
+				return nullptr;
+			}
+
+			for (auto _obj : args) {
+				if (_obj->obtype != ObjectType::PAIR_OBJ){
+					return BoolValue::factory(false);
+				}
+			}
+			return BoolValue::factory(true);
+		}
+	};
+
+	class isNumber : public BuiltIn{
+		Object* operator()(std::vector<Object*>& args){
+			if (args.size() < 1){
+				std::cerr << "number? operator error, illegal arguments number, expect more than 1, give " << args.size() << std::endl;
+				return nullptr;
+			}
+
+			for (auto _obj : args) {
+				if (_obj->obtype != ObjectType::DOUBLE_OBJ && _obj->obtype != ObjectType::INTEGER_OBJ){
+					return BoolValue::factory(false);
+				}
+			}
+			return BoolValue::factory(true);
+		}
+	};
+
+	class isInteger : public BuiltIn{
+		Object* operator()(std::vector<Object*>& args){
+			if (args.size() < 1){
+				std::cerr << "integer? operator error, illegal arguments number, expect more than 1, give " << args.size() << std::endl;
+				return nullptr;
+			}
+
+			for (auto _obj : args) {
+				if ( _obj->obtype != ObjectType::INTEGER_OBJ){
+					return BoolValue::factory(false);
+				}
+			}
+			return BoolValue::factory(true);
+		}
+	};
+	
+	class Equal_address :public BuiltIn{
+		Object* operator()(std::vector<Object*>& args){
+			if (args.size() != 2){
+				std::cerr << "eq? operator error, illegal arguments number, expect more than 1, give " << args.size() << std::endl;
+				return nullptr;
+			}
+
+			if (args[0] == args[1]){
+				return BoolValue::factory(true);
+			}
+			else{
+				return BoolValue::factory(false);
+			}
+		}
+	};
+
+	class Length :public BuiltIn{
+		Object* operator()(std::vector<Object*>& args){
+			if (args.size() != 1){
+				std::cerr << "length operator error, illegal arguments number, expect more than 1, give " << args.size() << std::endl;
+				return nullptr;
+			}
+
+			int n = 0;
+
+			Object *cur = args[0];
+
+			while (cur && cur->obtype == ObjectType::PAIR_OBJ) {
+				++n;
+				cur = ((Pair*)cur)->second;
+			}
+			return IntegerValue::factory(n);
+		}
+	};
+
+
 
 	class Car :public BuiltIn{
 	public:
@@ -81,19 +194,23 @@ namespace CppScheme{
 	class List :public BuiltIn{
 	public:
 		Object* operator()(std::vector<Object*>& args){
-			Pair* result = new Pair();
+
+			Pair* result = Pair::factory ();
 			size_t n = args.size();
+
 			if (n == 0){
 				return result;
 			}
 
+
 			result->first = args[0];
 			Pair* prev = result;
 			Pair* cur;
+
 			for (size_t idx = 1; idx != n; ++idx) {
-				cur = new Pair(args[idx], nullptr);
+				cur = Pair::factory(args[idx], nullptr);
 				prev->second = cur;
-				cur = prev;
+				prev = cur;
 			}
 			return result;
 		}
@@ -109,14 +226,25 @@ namespace CppScheme{
 				return nullptr;
 			}
 			size_t n = args.size();
-			double ret = ((DoubleValue*)args[0])->value + ((DoubleValue*)args[1])->value;
-			for (size_t i = 2; i < n; i++)
+
+			double result = 0;
+
+			bool find_double = false;
+
+			for (size_t i = 0; i < n; i++)
 			{
-				ret += ((DoubleValue*)args[i])->value;
+				if (args[i]->obtype == ObjectType::DOUBLE_OBJ){
+					find_double = true;
+				}
+				result += get_value(args[i]);
 			}
 
-
-			return new DoubleValue(ret);
+			if (find_double = false){
+				return IntegerValue::factory(result);
+			}
+			else{
+				return DoubleValue::factory(result);
+			}
 		}
 	};
 
@@ -127,15 +255,26 @@ namespace CppScheme{
 				std::cout << "Sub operator error, needs more than one operator, expression give " << args.size() << std::endl;
 				return nullptr;
 			}
+
+			double result = get_value(args[0]);
+
+			bool find_double = args[0]->obtype == ObjectType::INTEGER_OBJ ? false : true;
 			size_t n = args.size();
-			double ret = ((DoubleValue*)args[0])->value - ((DoubleValue*)args[1])->value;
-			for (size_t i = 2; i < n; i++)
+
+			for (size_t i = 1; i < n; i++)
 			{
-				ret -= ((DoubleValue*)args[i])->value;
+				if (args[i]->obtype == ObjectType::DOUBLE_OBJ){
+					find_double = true;
+				}
+				result -= get_value(args[i]);
 			}
 
-
-			return new DoubleValue(ret);
+			if (find_double = false){
+				return IntegerValue::factory(result);
+			}
+			else{
+				return DoubleValue::factory(result);
+			}
 		}
 	};
 
@@ -146,15 +285,27 @@ namespace CppScheme{
 				std::cout << "Mul operator error, needs more than one operator, expression give " << args.size() << std::endl;
 				return nullptr;
 			}
+
 			size_t n = args.size();
-			double ret = ((DoubleValue*)args[0])->value * ((DoubleValue*)args[1])->value;
-			for (size_t i = 2; i < n; i++)
+
+			double result = get_value(args[0]);
+
+			bool find_double = args[0]->obtype == ObjectType::INTEGER_OBJ ? false : true;
+
+			for (size_t i = 1; i < n; i++)
 			{
-				ret *= ((DoubleValue*)args[i])->value;
+				if (args[i]->obtype == ObjectType::DOUBLE_OBJ){
+					find_double = true;
+				}
+				result *= get_value(args[i]);
 			}
 
-			
-			return new DoubleValue(ret);
+			if (find_double = false){
+				return IntegerValue::factory(result);
+			}
+			else{
+				return DoubleValue::factory(result);
+			}
 		}
 	};
 
@@ -162,100 +313,33 @@ namespace CppScheme{
 	class Div :public BuiltIn{
 	public:
 		Object* operator()(std::vector<Object*>& args){
-			if (args.size() < 2){
+			if (args.size() != 2){
 				std::cout << "Div operator error, needs more than one operator, expression give " << args.size() << std::endl;
 				return nullptr;
 			}
-			size_t n = args.size();
-			double ret = ((DoubleValue*)args[0])->value / ((DoubleValue*)args[1])->value;
-			for (size_t i = 2; i < n; i++)
-			{
-				ret /= ((DoubleValue*)args[i])->value;
-			}
-			
-			return new DoubleValue(ret);
-		}
-	};
 
-	class Less :public BuiltIn{
-	public:
-		Object* operator()(std::vector<Object*>& args){
-			if (args.size() != 2){
-				std::cout << "Less operator error, needs more than one operator, expression give " << args.size() << std::endl;
-				return nullptr;
-			}
+			if (args[0]->obtype == ObjectType::INTEGER_OBJ && args[1]->obtype == ObjectType::INTEGER_OBJ){
+				int v1 = get_value(args[0]);
+				int v2 = get_value(args[1]);
+				if (v2 == 0){
+					std::cerr << "Invalid Div operator, denominator could not be ZERO" << std::endl;
+					return nullptr;
+				}
 
-			double v1 = ((DoubleValue*)(args[0]))->value;
-			double v2 = ((DoubleValue*)(args[1]))->value;
-
-			
-
-			if (v1 < v2){
-				return new BoolValue(true);
-			}
-			else
-				return new BoolValue(false);
-
-		}
-	};
-
-	class Greater :public BuiltIn{
-	public:
-		Object* operator()(std::vector<Object*>& args){
-			if (args.size() != 2){
-				std::cout << "Less operator error, needs more than one operator, expression give " << args.size() << std::endl;
-				return nullptr;
-			}
-
-			double v1 = ((DoubleValue*)(args[0]))->value;
-			double v2 = ((DoubleValue*)(args[1]))->value;
-			/*
-
-						std::cout << "Greater operator" << std::endl;
-						std::cout << "current left value v1 = " << v1 << std::endl;
-						std::cout << "current left value v2 = " << v2 << std::endl;
-						*/
-
-
-			
-
-			if (v1 > v2){
-				return new BoolValue(true);
-			}
-			else
-				return new BoolValue(false);
-
-		}
-	};
-
-	class Equal :public BuiltIn{
-	public:
-		Object* operator()(std::vector<Object*>& args){
-			if (args.size() != 2){
-				std::cout << "Equal operator error, needs more than one operator, expression give " << args.size() << std::endl;
-				return nullptr;
-			}
-
-			Object* result1 = Greater()(args);
-			Object* result2 = Less()(args);
-
-
-			
-
-			BoolValue * ret;
-			if (((BoolValue*)result1)->value == false && ((BoolValue*)result2)->value == false){
-				ret = new BoolValue(true);
+				return IntegerValue::factory(v1 / v2);
 			}
 			else{
-				ret = new BoolValue(false);
+				double v1 = get_value(args[0]);
+				double v2 = get_value(args[1]);
+				if (v2 == 0){
+					std::cerr << "Invalid Div operator, denominator could not be ZERO" << std::endl;
+					return nullptr;
+				}
+				return DoubleValue::factory(v1 / v2);
 			}
-
-			delete result1;
-			delete result2;
-
-			return ret;
 		}
 	};
+
 
 	class Remainder :public BuiltIn{
 	public:
@@ -265,13 +349,174 @@ namespace CppScheme{
 				return nullptr;
 			}
 
-			int v1 = ((DoubleValue*)args[0])->value;
-			int v2 = ((DoubleValue*)args[1])->value;
+			int v1 = ((IntegerValue*)args[0])->value;
+			int v2 = ((IntegerValue*)args[1])->value;
 
-			
-			return new DoubleValue(v1 % v2);
+			return IntegerValue::factory(v1%v2);
 		}
 	};
+
+
+	class Abs :public BuiltIn{
+	public:
+		Object* operator()(std::vector<Object*>& args){
+			if (args.size() != 1){
+				std::cout << "Abs operator error, needs more than one operator, expression give " << args.size() << std::endl;
+				return nullptr;
+			}
+
+			if (args[0]->obtype == ObjectType::INTEGER_OBJ){
+				int _x = ((IntegerValue*)args[0])->value;
+				if (_x < 0){
+					return IntegerValue::factory(-_x);
+				}
+				else{
+					return IntegerValue::factory(_x);
+				}
+			}else if (args[0]->obtype == ObjectType::DOUBLE_OBJ){
+				double _x = ((DoubleValue*)args[0])->value;
+				if (_x < 0){
+					return DoubleValue::factory(-_x);
+				}
+				else{
+					return DoubleValue::factory(_x);
+				}
+			}
+			else{
+				std::cerr << "Invalid value for abs operator" << std::endl;
+				return nullptr;
+			}
+		}
+	};
+
+
+
+
+	class Less :public BuiltIn{
+	public:
+		Object* operator()(std::vector<Object*>& args){
+			if (args.size() != 2){
+				std::cout << "Less operator error, needs more than one operator, expression give " << args.size() << std::endl;
+				return nullptr;
+			}
+
+			double v1 = get_value(args[0]);
+			double v2 = get_value(args[1]);
+
+			if (v1 < v2){
+				return BoolValue::factory(true);
+			}
+			else
+				return BoolValue::factory(false);
+
+		}
+	};
+
+	class Less_equal :public BuiltIn{
+		Object* operator()(std::vector<Object*>& args){
+			if (args.size() != 2){
+				std::cout << "Less_equal operator error, needs more than one operator, expression give " << args.size() << std::endl;
+				return nullptr;
+			}
+
+			double v1 = get_value(args[0]);
+			double v2 = get_value(args[1]);
+
+			if (v1 <= v2){
+				return BoolValue::factory(true);
+			}
+			else
+				return BoolValue::factory(false);
+
+		}
+	};
+
+
+	class Greater :public BuiltIn{
+	public:
+		Object* operator()(std::vector<Object*>& args){
+			if (args.size() != 2){
+				std::cout << "Less operator error, needs more than one operator, expression give " << args.size() << std::endl;
+				return nullptr;
+			}
+
+			double v1 = get_value(args[0]);
+			double v2 = get_value(args[1]);
+
+			if (v1 > v2){
+				return BoolValue::factory(true);
+			}
+			else
+				return BoolValue::factory(false);
+
+		}
+	};
+
+	class Greater_equal :public BuiltIn{
+	public:
+		Object* operator()(std::vector<Object*>& args){
+			if (args.size() != 2){
+				std::cout << "Less operator error, needs more than one operator, expression give " << args.size() << std::endl;
+				return nullptr;
+			}
+
+			double v1 = get_value(args[0]);
+			double v2 = get_value(args[1]);
+
+			if (v1 >= v2){
+				return BoolValue::factory(true);
+			}
+			else
+				return BoolValue::factory(false);
+
+		}
+	};
+
+
+
+	class Equal :public BuiltIn{
+	public:
+		Object* operator()(std::vector<Object*>& args){
+			if (args.size() != 2){
+				std::cout << "Equal operator error, needs more than one operator, expression give " << args.size() << std::endl;
+				return nullptr;
+			}
+
+			double v1 = get_value(args[0]);
+			double v2 = get_value(args[1]);
+
+			if (v1 == v2){
+				return BoolValue::factory(true);
+			}
+			else{
+				return BoolValue::factory(false);
+			}
+
+		}
+	};
+
+	class Not_Equal :public BuiltIn{
+	public:
+		Object* operator()(std::vector<Object*>& args){
+			if (args.size() != 2){
+				std::cout << "Not_Equal operator error, needs more than one operator, expression give " << args.size() << std::endl;
+				return nullptr;
+			}
+
+			double v1 = get_value(args[0]);
+			double v2 = get_value(args[1]);
+
+			if (v1 != v2){
+				return BoolValue::factory(true);
+			}
+			else{
+				return BoolValue::factory(false);
+			}
+
+		}
+	};
+
+
 
 	class Set :public BuiltIn{
 	public:
@@ -287,19 +532,39 @@ namespace CppScheme{
 
 	inline bool is_condition_true(Object* obj, bool& result){
 		result = true;
-		if (!obj){
-			return false;
-		}
 
-		if (BoolValue* ptr = dynamic_cast<BoolValue*>(obj)){
+		if (!obj){ return false; }
+
+		switch (obj->obtype)
+		{
+		case ObjectType::INTEGER_OBJ:
+		{
+			IntegerValue* ptr = (IntegerValue*)obj;
+			if (ptr->value == 0){
+				result = false;
+			}
+			break;
+		}
+		case ObjectType::DOUBLE_OBJ:
+		{
+			DoubleValue* ptr = (DoubleValue*)obj;
+			if (ptr->value == 0){
+				result = false;
+			}
+			break;
+		}
+		case ObjectType::BOOL_OBJ:
+		{
+			BoolValue* ptr = (BoolValue*)obj;
 			if (!ptr->value){
 				result = false;
 			}
+			break;
 		}
-		else if (DoubleValue* ptr = dynamic_cast<DoubleValue*>(obj)){
-			if (ptr->value == 0)
-				result = false;
+		default:
+			break;
 		}
+
 		return true;
 	}
 
@@ -316,19 +581,17 @@ namespace CppScheme{
 			for (size_t idx = 0; idx != args.size(); ++idx) {
 				if (is_condition_true(args[idx], cur_cond)){
 					if (cur_cond){
-						
-						ret = new BoolValue(true);
+						ret = BoolValue::factory(true);
 					}
 
 				}
 				else{
 					std::cerr << "Not valid Object " << std::endl;
-					
 					ret = nullptr;
 				}
 			}
-			
-			return new BoolValue(false);
+
+			return BoolValue::factory(false);
 
 		}
 	};
@@ -345,19 +608,18 @@ namespace CppScheme{
 			for (size_t idx = 0; idx != args.size(); ++idx) {
 				if (is_condition_true(args[idx], cur_cond)){
 					if (!cur_cond){
-						
-						return new BoolValue(false);
+
+						return BoolValue::factory(false);
 					}
 
 				}
 				else{
 					std::cerr << "Not valid Object " << std::endl;
-					
+
 					return nullptr;
 				}
 			}
-			
-			return new BoolValue(true);
+			return BoolValue::factory(true);
 		}
 	};
 
@@ -368,21 +630,22 @@ namespace CppScheme{
 				std::cout << "Not operator error, expected only one operator, expression give " << args.size() << std::endl;
 				return nullptr;
 			}
+
 			bool cur_cond = true;
 			BoolValue* ret;
 			if (is_condition_true(args[0], cur_cond)){
 				if (cur_cond){
-					ret = new BoolValue(false);
+					ret = BoolValue::factory(false);
 				}
 				else{
-					ret = new BoolValue(true);
+					ret = BoolValue::factory(true);
 				}
 			}
 			else{
 				std::cerr << "Invalid Object given" << std::endl;
 				ret = nullptr;
 			}
-			
+
 			return ret;
 		}
 	};
@@ -393,24 +656,50 @@ namespace CppScheme{
 				std::cout << "IsEven? operator error, expected only one operator, expression give " << args.size() << std::endl;
 				return nullptr;
 			}
-			BoolValue* ret;
-			if (DoubleValue* ptr = dynamic_cast<DoubleValue*>(args[0])){
-				int val = ptr->value;
-				if (!(val && 1)){
-					ret = new BoolValue(true);
+
+			switch (args[0]->obtype) {
+			case ObjectType::INTEGER_OBJ:
+			{
+				int _x = ((IntegerValue*)args[0])->value;
+				if (_x & 1){
+					return BoolValue::factory(false);
 				}
-				else{
-					ret = new BoolValue(false);
-				}
+				else
+					return BoolValue::factory(true);
+				break;
 			}
-			else{
-				std::cerr << "Expected Number Object in even? operator!" << std::endl;
-				ret = nullptr;
+			default:
+				std::cerr << "Invalid input fucntion \"IsEven\"" << std::endl;
+				return nullptr;
 			}
-			
-			return ret;
 		}
 	};
+
+	class IsOdd :public BuiltIn{
+		Object* operator()(std::vector<Object*>& args){
+			if (args.size() != 1){
+				std::cout << "IsOdd? operator error, expected only one operator, expression give " << args.size() << std::endl;
+				return nullptr;
+			}
+
+			switch (args[0]->obtype) {
+			case ObjectType::INTEGER_OBJ:
+			{
+				int _x = ((IntegerValue*)args[0])->value;
+				if (_x && 1){
+					return BoolValue::factory(true);
+				}
+				else
+					return BoolValue::factory(false);
+				break;
+			}
+			default:
+				std::cerr << "Invalid input fir \"IsEven\"" << std::endl;
+				return nullptr;
+			}
+		}
+	};
+
 
 	class Square :public BuiltIn{
 		Object* operator()(std::vector<Object*>& args){
@@ -419,14 +708,15 @@ namespace CppScheme{
 				return nullptr;
 			}
 
-			if (DoubleValue* ptr = dynamic_cast<DoubleValue*>(args[0])){
-				double val = ptr->value;
-				
-				return new DoubleValue(val*val);
+			if (args[0]->obtype == ObjectType::INTEGER_OBJ){
+				int _x = ((IntegerValue*)args[0])->value;
+				return IntegerValue::factory(_x*_x);
+			}
+			else if (args[0]->obtype == ObjectType::DOUBLE_OBJ){
+				double _x = ((DoubleValue*)args[0])->value;
+				return DoubleValue::factory(_x *_x);
 			}
 			else{
-				std::cerr << "Expected Number Object in square operator!" << std::endl;
-				
 				return nullptr;
 			}
 		}
@@ -438,13 +728,44 @@ namespace CppScheme{
 				std::cout << "Display operator error, expected only one operator, expression give " << args.size() << std::endl;
 				return nullptr;
 			}
-
-			printf("%lf\n", ((DoubleValue*)args[0])->value);
-
+			std::cout << args[0]->to_string();
 			return nullptr;
 		}
 	};
 
+	class Random :public BuiltIn{
+		Object* operator()(std::vector<Object*>& args){
+			if (args.size() != 1 ){
+				std::cout << "Display operator error, expected only one operator, expression give " << args.size() << std::endl;
+				return nullptr;
+			}
+			srand(time(nullptr));
+
+			if (args[0]->obtype == ObjectType::INTEGER_OBJ){
+				int _x = ((IntegerValue*)args[0])->value;
+				return IntegerValue::factory(rand() % _x);
+			}
+			else if (args[0]->obtype == ObjectType::DOUBLE_OBJ){
+				double _x = ((DoubleValue*)args[0])->value;
+				return DoubleValue::factory((_x * rand()) / RAND_MAX);
+			}
+			else{
+				return nullptr;
+			}
+		}
+	};
+
+	class Newline : public BuiltIn{
+		Object* operator()(std::vector<Object*>& args){
+			if (args.size () > 0){
+				std::cerr << "Newline operator error, expected no argument" << std::endl;
+				return nullptr;
+			}
+			fprintf(stdout, "\n");
+			fflush(stdout);
+			return nullptr;
+		}
+	};
 }
 
 #endif

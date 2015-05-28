@@ -1,23 +1,23 @@
 //#define DEBUG_TOKEN
-/*
+
 #define _CRTDBG_MAP_ALLOC
 
 #ifdef _DEBUG
 #ifndef DBG_NEW
 #define DBG_NEW new ( _NORMAL_BLOCK , __FILE__ , __LINE__ )
 #define new DBG_NEW
-
 #endif	// DBG_NEW
 #endif  // _DEBUG
+
 #include <stdlib.h>
-#include <crtdbg.h>*/
+#include <crtdbg.h>
 #include <iostream>
 #include <windows.h>
 #include "Parser.h"
-#include <fstream>
 #include "build_in.h"
-#include <xtree>
 #include "gc.h"
+#include <iosfwd>
+#include <fstream>
 
 using namespace CppScheme;
 
@@ -34,17 +34,19 @@ void mainloop(EnvTreeList env, std::istream& input){
 		std::cout << "Scheme " << current_line_number << ">> ";
 		cur_char = input.get();
 		ExpAST* expr = parseExpAst(input, env);
-
 		if (expr){
 			if (expr->_exp_type == ExpAST_TYPE::EXIT_TYPE){
 				delete expr;
+				mark_sweep();
 				break;
 			}
+
 			Object* ret = expr->eval(env);
+
 			if (ret) {
 				switch (ret->obtype)
 				{
-				case ObjectType::BOOLOBJ:
+				case ObjectType::BOOL_OBJ:
 				{
 					BoolValue* ptr = (BoolValue*)ret;
 					if (ptr->value){
@@ -55,24 +57,33 @@ void mainloop(EnvTreeList env, std::istream& input){
 					}
 					break;
 				}
-				case ObjectType::BuiltInOBJ:
-				case ObjectType::PROCEDURE:
+				case ObjectType::BuiltIn_OBJ:
+				case ObjectType::PROCEDURE_OBJ:
 				{
 					if (expr->_exp_type == ExpAST_TYPE::VARIABLE_TYPE){
 						VariableExp* var_ptr = (VariableExp*)expr;
 						cout << "#<Procedure: " << var_ptr->var_name << ">" << endl;
 					}
 					else{
-						cout << "#<Procedure>" << endl;
+						std::cout << "#<Procedure>" << std::endl;
 					}
 					break;
 				}
-				case ObjectType::DOUBLEOBJ:
+				case ObjectType::DOUBLE_OBJ:
 				{
 					DoubleValue* ptr = (DoubleValue*)ret;
-					cout << ptr->value << endl;
+					std::cout << ptr->value << std::endl;
 					break;
 				}
+				case ObjectType::INTEGER_OBJ:
+				{
+					IntegerValue* ptr = (IntegerValue*)ret;
+					std::cout << ptr->value << std::endl;
+					break;
+				}
+				case ObjectType::PAIR_OBJ:
+					std::cout << ret->to_string() << std::endl;
+					break;
 				default:
 					break;
 				}
@@ -86,6 +97,74 @@ void mainloop(EnvTreeList env, std::istream& input){
 	}
 }
 
+
+void load_file(EnvTreeList env, std::ifstream &input){
+	while (true){
+		cur_char = input.get();
+		ExpAST* expr = parseExpAst(input, env);
+		if (expr){
+			if (expr->_exp_type == ExpAST_TYPE::EXIT_TYPE){
+				delete expr;
+				mark_sweep();
+				break;
+			}
+
+			Object* ret = expr->eval(env);
+
+			if (ret) {
+				switch (ret->obtype)
+				{
+				case ObjectType::BOOL_OBJ:
+				{
+					BoolValue* ptr = (BoolValue*)ret;
+					if (ptr->value){
+						std::cout << "#t" << std::endl;
+					}
+					else{
+						std::cout << "#f" << std::endl;
+					}
+					break;
+				}
+				case ObjectType::BuiltIn_OBJ:
+				case ObjectType::PROCEDURE_OBJ:
+				{
+					if (expr->_exp_type == ExpAST_TYPE::VARIABLE_TYPE){
+						VariableExp* var_ptr = (VariableExp*)expr;
+						cout << "#<Procedure: " << var_ptr->var_name << ">" << endl;
+					}
+					else{
+						std::cout << "#<Procedure>" << std::endl;
+					}
+					break;
+				}
+				case ObjectType::DOUBLE_OBJ:
+				{
+					DoubleValue* ptr = (DoubleValue*)ret;
+					std::cout << ptr->value << std::endl;
+					break;
+				}
+				case ObjectType::INTEGER_OBJ:
+				{
+					IntegerValue* ptr = (IntegerValue*)ret;
+					std::cout << ptr->value << std::endl;
+				}
+				case ObjectType::PAIR_OBJ:
+					std::cout << "'" <<ret->to_string() << std::endl;
+					break;
+				default:
+					break;
+				}
+			}
+
+		}
+		if (current_tok == TOKEN::TEOF){
+			break;
+		}
+	}
+	mark_sweep();
+}
+
+
 //initialize the builtin functions
 void init(EnvTree* env){
 	(*env)["+"] = new Add();
@@ -96,9 +175,14 @@ void init(EnvTree* env){
 	(*env)["car"] = new Car();
 	(*env)["cdr"] = new Cdr();
 	(*env)["list"] = new List();
+	(*env)["pair?"] = new IsPair();
+	(*env)["length"] = new Length();
 	(*env)["<"] = new Less();
+	(*env)["<="] = new Less_equal();
+	(*env)[">="] = new Greater_equal();
 	(*env)[">"] = new Greater();
 	(*env)["="] = new Equal();
+	(*env)["!="] = new Not_Equal();
 	(*env)["remainder"] = new Remainder();
 	(*env)["and"] = new And();
 	(*env)["or"] = new Or();
@@ -106,6 +190,11 @@ void init(EnvTree* env){
 	(*env)["even?"] = new IsEven();
 	(*env)["square"] = new Square();
 	(*env)["display"] = new Display();
+	(*env)["random"] = new Random();
+	(*env)["newline"] = new Newline();
+	(*env)["number?"] = new isNumber();
+	(*env)["integer?"] = new isInteger();
+	(*env)["eq?"] = new Equal_address();
 
 }
 
@@ -126,7 +215,7 @@ void init_env(){
 
 void clear_env(){
 	for (auto iter = GlobalVariable->begin(); iter != GlobalVariable->end(); ++iter) {
-		if (iter->second->obtype == ObjectType::BuiltInOBJ){
+		if (iter->second->obtype == ObjectType::BuiltIn_OBJ){
 			delete iter->second;
 		}
 	}
@@ -142,23 +231,35 @@ void clear_env(){
 	}
 
 	Env.clearLocal();
+	ExpAST_pool.clear();
+	Object_pool.clear();
 }
 
 
 int main(){
-
+	//_CrtSetBreakAlloc(375);
+	//_CrtSetBreakAlloc(828);
 	init_env();
 
+	auto ExpAST_pool_ptr = &ExpAST_pool;
+	auto Object_pool_ptr = &Object_pool;
+
 	std::ifstream file_in("E:\\BaiduDisk\\Code\\Compiler\\PGWT\\CppScheme\\Data\\input.txt");
+
 	//mainloop(Env, file_in);
 
-	mainloop(Env, std::cin);
+	mainloop(Env, file_in);
 
 
 	file_in.close();
+
 	clear_env();
+
 	cout << "ending construct" << endl;
-	
-	//_CrtDumpMemoryLeaks();
+
+
+
+
+	_CrtDumpMemoryLeaks();
 	return 0;
 }

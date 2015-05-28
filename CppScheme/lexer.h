@@ -11,6 +11,7 @@ enum TOKEN{
 
 	IDENTIFIER = 1,
 	NUMBER,
+	DOUBLE_TOK,
 	INTEGER,
 
 
@@ -119,10 +120,15 @@ static TOKEN get_token(std::istream &input){
 				cur_char = input.get();
 			}
 
-			if (isNumber){
+			if (isNumber && dot_number == 0){
+				DEBUG_STDOUT_TOKEN(tmp, "TOKEN::INTEGER");
+				current_int = stoi(tmp);
+				return current_tok = TOKEN::INTEGER;
+			}
+			else if (isNumber && dot_number == 1){
 				DEBUG_STDOUT_TOKEN(tmp, "TOKEN::DOUBLE");
 				current_double = stod(tmp);
-				return current_tok = TOKEN::NUMBER;
+				return current_tok = TOKEN::DOUBLE_TOK;
 			}
 			else{
 				DEBUG_STDOUT_TOKEN(tmp, "TOKEN::IDENTIFIER");

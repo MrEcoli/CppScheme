@@ -55,10 +55,16 @@ ExpAST* parseExpAst(std::istream& in, EnvTreeList current_env, int left = 0){
 		TOKEN _tok = get_token(in);
 		switch (_tok)
 		{
-		case TOKEN::NUMBER:
+		case TOKEN::DOUBLE_TOK:
 		{
 			SimpleExp* ret = SimpleExp::factory();
 			ret->obj = DoubleValue::factory(current_double);
+			return ret;
+		}
+		case TOKEN::INTEGER:
+		{
+			SimpleExp* ret = SimpleExp::factory();
+			ret->obj = IntegerValue::factory(current_int);
 			return ret;
 		}
 		case TOKEN::IDENTIFIER:
