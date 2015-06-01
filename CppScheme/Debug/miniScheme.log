@@ -1,12 +1,25 @@
-﻿生成启动时间为 2015/5/29 2:07:24。
+﻿生成启动时间为 2015/5/29 18:32:03。
      1>项目“E:\BaiduDisk\Code\Compiler\PGWT\CppScheme\CppScheme\miniScheme.vcxproj”在节点 2 上(Build 个目标)。
      1>C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V120\Microsoft.CppBuild.targets(388,5): warning MSB8028: The intermediate directory (Debug\) contains files shared from another project (miniScheme.vcxproj).  This can lead to incorrect clean and rebuild behavior.
-     1>Link:
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D _MBCS /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt miniScheme.cpp
+         miniScheme.cpp
+     1>e:\baidudisk\code\compiler\pgwt\cppscheme\cppscheme\lexer.h(142): warning C4002: “DEBUG_STDOUT_TOKEN”宏的实参太多
+     1>e:\baidudisk\code\compiler\pgwt\cppscheme\cppscheme\lexer.h(146): warning C4002: “DEBUG_STDOUT_TOKEN”宏的实参太多
+     1>e:\baidudisk\code\compiler\pgwt\cppscheme\cppscheme\lexer.h(150): warning C4002: “DEBUG_STDOUT_TOKEN”宏的实参太多
+     1>e:\baidudisk\code\compiler\pgwt\cppscheme\cppscheme\lexer.h(154): warning C4002: “DEBUG_STDOUT_TOKEN”宏的实参太多
+     1>e:\baidudisk\code\compiler\pgwt\cppscheme\cppscheme\lexer.h(160): warning C4002: “DEBUG_STDOUT_TOKEN”宏的实参太多
+     1>e:\baidudisk\code\compiler\pgwt\cppscheme\cppscheme\build_in.h(243): warning C4244: “参数”: 从“double”转换到“int”，可能丢失数据
+     1>e:\baidudisk\code\compiler\pgwt\cppscheme\cppscheme\build_in.h(273): warning C4244: “参数”: 从“double”转换到“int”，可能丢失数据
+     1>e:\baidudisk\code\compiler\pgwt\cppscheme\cppscheme\build_in.h(304): warning C4244: “参数”: 从“double”转换到“int”，可能丢失数据
+     1>e:\baidudisk\code\compiler\pgwt\cppscheme\cppscheme\build_in.h(322): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
+     1>e:\baidudisk\code\compiler\pgwt\cppscheme\cppscheme\build_in.h(323): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
+     1>e:\baidudisk\code\compiler\pgwt\cppscheme\cppscheme\build_in.h(742): warning C4244: “参数”: 从“time_t”转换到“unsigned int”，可能丢失数据
+       Link:
          C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"E:\BaiduDisk\Code\Compiler\PGWT\CppScheme\Debug\CppScheme.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"E:\BaiduDisk\Code\Compiler\PGWT\CppScheme\Debug\CppScheme.pdb" /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"E:\BaiduDisk\Code\Compiler\PGWT\CppScheme\Debug\CppScheme.lib" /MACHINE:X86 Debug\miniScheme.obj
-         LINK : 没有找到 E:\BaiduDisk\Code\Compiler\PGWT\CppScheme\Debug\CppScheme.exe 或上一个增量链接没有生成它；正在执行完全链接
          miniScheme.vcxproj -> E:\BaiduDisk\Code\Compiler\PGWT\CppScheme\Debug\CppScheme.exe
      1>已完成生成项目“E:\BaiduDisk\Code\Compiler\PGWT\CppScheme\CppScheme\miniScheme.vcxproj”(Build 个目标)的操作。
 
 生成成功。
 
-已用时间 00:00:01.35
+已用时间 00:00:03.27

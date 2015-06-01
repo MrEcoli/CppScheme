@@ -90,7 +90,7 @@ void mainloop(EnvTreeList env, std::istream& input){
 			}
 
 		}
-		if (current_tok == TOKEN::TEOF){
+		if (current_tok == TOKEN::EOF_TOK){
 			break;
 		}
 		mark_sweep();
@@ -151,13 +151,32 @@ void load_file(EnvTreeList env, std::ifstream &input){
 				case ObjectType::PAIR_OBJ:
 					std::cout << "'" <<ret->to_string() << std::endl;
 					break;
+				case ObjectType::NULL_OBJ:
+					std::cout << "'()" << std::endl;
+					break;
+				case ObjectType::SYMBOL_OBJ:
+				{
+					SymbolValue* ptr = (SymbolValue*)ret;
+					if (ptr->_symbol == "'"){
+						std::cout << "'quote" << std::endl;
+					}
+					else if (ptr->_symbol == "`"){
+						std::cout << "'quasiquote" << std::endl;
+					}
+					else if (ptr->_symbol == ","){
+						std::cout << "'unquote" << std::endl;
+					}
+					else{
+						std::cout << ptr->_symbol << std::endl;
+					}
+				}
 				default:
 					break;
 				}
 			}
 
 		}
-		if (current_tok == TOKEN::TEOF){
+		if (current_tok == TOKEN::EOF_TOK){
 			break;
 		}
 	}
@@ -206,9 +225,9 @@ void release(EnvTree* env){
 }
 
 void init_env(){
+	SetConsoleCP(437);
 	GlobalVariable = new EnvTree();
 	Env = Env.push_front(GlobalVariable);
-
 	init(GlobalVariable);
 }
 
@@ -248,7 +267,7 @@ int main(){
 
 	//mainloop(Env, file_in);
 
-	mainloop(Env, file_in);
+	mainloop(Env, std::cin);
 
 
 	file_in.close();
@@ -257,9 +276,7 @@ int main(){
 
 	cout << "ending construct" << endl;
 
-
-
-
+	
 	_CrtDumpMemoryLeaks();
 	return 0;
 }

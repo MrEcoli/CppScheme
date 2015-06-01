@@ -208,7 +208,7 @@ namespace CppScheme{
 			Pair* cur;
 
 			for (size_t idx = 1; idx != n; ++idx) {
-				cur = Pair::factory(args[idx], nullptr);
+				cur = Pair::factory(args[idx], NullValue::factory());
 				prev->second = cur;
 				prev = cur;
 			}
@@ -762,10 +762,150 @@ namespace CppScheme{
 				return nullptr;
 			}
 			fprintf(stdout, "\n");
-			fflush(stdout);
 			return nullptr;
 		}
 	};
+	
+
+	class IsList :public BuiltIn{
+		Object* operator()(std::vector<Object*>& args){
+			if (args.size () != 1){
+				std::cerr << "list? error, expect one operand, given " << args.size() << std::endl;
+				return nullptr;
+			}
+
+			if (!args[0]){
+				std::cerr << "list? error, Null object is given for list?" << std::endl;
+				return nullptr;
+			}
+
+			Object* cur = args[0];
+
+
+			while (cur && cur->obtype == ObjectType::PAIR_OBJ) {
+				cur = ((Pair*)cur)->second;
+			}
+
+			if (cur && cur->obtype == ObjectType::NULL_OBJ){
+				return BoolValue::factory(true);
+			}
+			else{
+				return BoolValue::factory(false);
+			}
+		}
+	};
+
+	class IsSymnol :public BuiltIn{
+		Object* operator()(std::vector<Object*>& args){
+			if (args.size() != 1){
+				std::cerr << "symbol? error, expect one operand, given " << args.size() << std::endl;
+				return nullptr;
+			}
+
+			Object* cur = args[0];
+
+			if (cur && cur->obtype == ObjectType::SYMBOL_OBJ){
+				return BoolValue::factory(true);
+			}
+			else{
+				return BoolValue::factory(false);
+			}
+		}
+	};
+
+	class IsString :public BuiltIn{
+		Object* operator()(std::vector<Object*>& args){
+			if (args.size() != 1){
+				std::cerr << "string? error, expect one operand, given " << args.size() << std::endl;
+				return nullptr;
+			}
+
+			Object* cur = args[0];
+
+			if (cur && cur->obtype == ObjectType::STRING_OBJ){
+				return BoolValue::factory(true);
+			}
+			else{
+				return BoolValue::factory(false);
+			}
+		}
+	};
+
+
+	class IsVector :public BuiltIn{
+		Object* operator()(std::vector<Object*>& args){
+			if (args.size() != 1){
+				std::cerr << "vector? error, expect one operand, given " << args.size() << std::endl;
+				return nullptr;
+			}
+
+			Object* cur = args[0];
+
+			if (cur && cur->obtype == ObjectType::VECTOR_OBJ){
+				return BoolValue::factory(true);
+			}
+			else{
+				return BoolValue::factory(false);
+			}
+		}
+	};
+
+
+
+	class IsProcedure :public BuiltIn{
+		Object* operator()(std::vector<Object*>& args){
+			if (args.size() != 1){
+				std::cerr << "procedure? error, expect one operand, given " << args.size() << std::endl;
+				return nullptr;
+			}
+
+			Object* cur = args[0];
+
+			if (cur && cur->obtype == ObjectType::PROCEDURE_OBJ){
+				return BoolValue::factory(true);
+			}
+			else{
+				return BoolValue::factory(false);
+			}
+		}
+	};
+
+
+	class IsBoolean :public BuiltIn{
+		Object* operator()(std::vector<Object*>& args){
+			if (args.size() != 1){
+				std::cerr << "boolean? error, expect one operand, given " << args.size() << std::endl;
+				return nullptr;
+			}
+
+			Object* cur = args[0];
+
+			if (cur && cur->obtype == ObjectType::BOOL_OBJ){
+				return BoolValue::factory(true);
+			}
+			else{
+				return BoolValue::factory(false);
+			}
+		}
+	};
+
+
+	
+
+
+
+
+	//scheme的内置谓词
+	//没有任何对象同时满足下面所列的两个或两个以上的谓词
+	//boolean?
+	//pair?
+	//symbol?
+	//char?
+	//number?
+	//string?
+	//vector?
+	//port?
+	//procedure?
 }
 
 #endif

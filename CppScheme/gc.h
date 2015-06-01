@@ -80,11 +80,11 @@ namespace CppScheme{
 			Pair* p = (Pair*)cur_obj;
 			//确认序对指向的对象未访问过才进行搜索
 			//序对可能会导致闭环，所以这个步骤是必不可少的
-			if (p->first != nullptr && obj_visited.find(p->first) == obj_visited.end()){
+			if (p->first->obtype != ObjectType::NULL_OBJ && obj_visited.find(p->first) == obj_visited.end()){
 				dfs_object(p->first, exp_visited, obj_visited);
 			}
 
-			if (p->second != nullptr && obj_visited.find(p->second) == obj_visited.end()){
+			if (p->second->obtype != ObjectType::NULL_OBJ && obj_visited.find(p->second) == obj_visited.end()){
 				dfs_object(p->second, exp_visited, obj_visited);
 			}
 			break;

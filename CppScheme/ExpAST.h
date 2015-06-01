@@ -15,7 +15,6 @@ namespace CppScheme{
 	class BuiltIn;
 	std::map<ExpAST*, bool> ExpAST_pool;
 
-
 	class ExitExp : public ExpAST{
 	public:
 		Object* eval(EnvTreeList){ return nullptr; }
@@ -30,7 +29,21 @@ namespace CppScheme{
 		}
 	};
 
+	class NullExp :public ExpAST{
+	private:
+		NullExp() :ExpAST(ExpAST_TYPE::NULL_TYPE){}
+		NullExp(const NullExp&);
+		NullExp operator=(const NullExp&);
+	public:
+		static NullExp* factory(){
+			static NullExp Singleton;
+			return &Singleton;
+		}
 
+		ExpAST* deep_copy(){ return this; }
+
+		virtual Object* eval(EnvTreeList){ return NullValue::factory(); }
+	};
 
 
 	//Simple ExpAST
@@ -50,12 +63,123 @@ namespace CppScheme{
 			return ret;
 		}
 
-		static SimpleExp* factory(){
+		inline static SimpleExp* factory(){
 			SimpleExp* ret = new SimpleExp();
 			ExpAST_pool[ret] = false;
 			return ret;
 		}
+
+		inline static SimpleExp* factory(Object* _x){
+			SimpleExp* ret = new SimpleExp();
+			ret->obj = _x;
+			ExpAST_pool[ret] = false;
+			return ret;
+		}
+
+
+		inline static SimpleExp* factory(double _db){
+			DoubleValue* _dv = DoubleValue::factory(_db);
+			SimpleExp* ret = new SimpleExp(_dv);
+			ExpAST_pool[ret] = false;
+			return ret;
+		}
+
+		inline static SimpleExp* factory(int _x){
+			IntegerValue* _iv = IntegerValue::factory(_x);
+			SimpleExp* ret = new SimpleExp(_iv);
+			ExpAST_pool[ret] = false;
+			return ret;
+		}
 	};
+
+	class PairExp : public ExpAST{
+	public:
+		ExpAST* first;
+		ExpAST* second;
+		PairExp() :ExpAST(ExpAST_TYPE::PAIR_EXP), first(NullExp::factory ()), second(NullExp::factory ()){}
+		Object* eval(EnvTreeList env){
+			Pair* ret = Pair::factory();
+			ret->first = first->eval(env);
+			ret->second = second->eval(env);
+			return ret;
+		}
+		ExpAST* deep_copy(){
+			PairExp* ret = new PairExp();
+			ret->first = first->deep_copy();
+			ret->second = second->deep_copy();
+			return ret;
+		}
+		
+		inline static PairExp* factory(){
+			PairExp *ret = new PairExp();
+			ExpAST_pool[ret] = false;
+			return ret;
+		}
+
+	};
+
+	class VectorExp :public ExpAST{
+	public:
+		std::vector<ExpAST*> vecs;
+		VectorExp() :ExpAST(ExpAST_TYPE::VECTOR_EXP){}
+
+		virtual Object* eval(EnvTreeList env);
+		inline static VectorExp* factory(){
+			VectorExp* ret = new VectorExp();
+			ExpAST_pool[ret] = false;
+			return ret;
+		}
+
+		ExpAST* deep_copy(){
+			VectorExp* ret = new VectorExp();
+			ret->vecs.resize(vecs.size());
+
+			for (size_t i = 0; i < vecs.size(); ++i) {
+				ret->vecs[i] = this->vecs[i]->deep_copy();
+			}
+			return ret;
+		}
+		
+	};
+
+
+	class SymbolExp : public ExpAST{
+	public:
+		std::string str;
+		SymbolExp() :ExpAST(ExpAST_TYPE::SYMBOL_EXP){}
+		SymbolExp(std::string _s) : ExpAST(ExpAST_TYPE::SYMBOL_EXP), str(_s){}
+		inline static SymbolExp* factory(std::string _x){
+			SymbolExp* ret = new SymbolExp(_x);
+			ExpAST_pool[ret] = false;
+			return ret;
+		}
+		Object* eval(EnvTreeList){
+			return SymbolValue::factory(str);
+		}
+		ExpAST* deep_copy(){
+			return SymbolExp::factory(str);
+		}
+	};
+
+
+	class StrExp :public ExpAST{
+	public:
+		std::string str;
+		StrExp(std::string _s) : ExpAST(ExpAST_TYPE::STR_EXP), str(_s){}
+
+		ExpAST* deep_copy(){
+			return StrExp::factory(str);
+		}
+		static StrExp* factory(std::string _s){
+			StrExp* ret = new StrExp(_s);
+			ExpAST_pool[ret] = false;
+			return ret;
+		}
+		Object* eval(EnvTreeList){
+			return StringValue::factory(str);
+		}
+	};
+
 
 
 	//一个表示仅有变量名称的表达式
@@ -276,8 +400,7 @@ namespace CppScheme{
 						Object* tmp = parameters[i]->eval(env);
 						args[i] = tmp;
 					}
-					Object* ret = (*_func)(args);
-					return ret;
+					return (*_func)(args);
 				}
 			}
 		}
@@ -327,6 +450,8 @@ namespace CppScheme{
 			return nullptr;
 		}
 	}
+
+
 
 	Object* DefineVariableExp::eval(EnvTreeList env){
 		Object* ret = this->_expr->eval(env);
@@ -471,6 +596,16 @@ namespace CppScheme{
 		(*env.head->ptr_to_tree)[_name] = proc;
 
 		return nullptr;
+	}
+
+
+	Object* VectorExp::eval(EnvTreeList env){
+		VectorValue *ret = VectorValue::factory(this->vecs.size ());
+
+		for (size_t i = 0; i != vecs.size(); ++i) {
+			ret->vec[i] = this->vecs[i]->eval(env);
+		}
+		return ret;
 	}
 
 }
