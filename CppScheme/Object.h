@@ -89,7 +89,7 @@ namespace CppScheme{
 		}
 
 		virtual std::string to_string(){
-			return value;
+			return "\""+value+"\"";
 		}
 	};
 

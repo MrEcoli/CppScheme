@@ -225,6 +225,7 @@ static TOKEN get_token(std::istream &input){
 		case '4':
 		case '5':
 		case '6':
+		case '8':
 		case '7':
 		case '9':
 		{

@@ -1,4 +1,148 @@
 
+(define (even? n) (= (remainder n 2) 0))
+(define (odd? n) (= (remainder n 2) 1))
+(define (sq n) (* n n))
+
+(define square sq)
+
+; ex1.16
+(define (f x)
+      (cond ((= x 0) 0)
+            ((even? x) (f (/ x 2)))
+          (else (f (- x 1)))))
+(define (fast-pow b n a)
+  (cond ((= n 0) a)
+        ((even? n) (fast-pow (sq b) (/ n 2) a))
+        (else (fast-pow b (- n 1) (* a b)))))
+
+(fast-pow 2 1 1)
+(fast-pow 2 2 1)
+(fast-pow 2 3 1)
+(fast-pow 2 4 1)
+(fast-pow 2 5 1)
+(fast-pow 2 6 1)
+(fast-pow 2 7 1)
+(fast-pow 2 8 1)
+(fast-pow 2 9 1)
+(fast-pow 2 10 1)
+(fast-pow 2 11 1)
+
+
+; ex1.17
+
+(define (double n) (+ n n))
+(define (halve n) (/ n 2))
+
+
+; ex 1.18
+(define (fast-mul a b res)
+  (cond ((or (= a 0) (= b 0)) 0)
+        ((= b 1) (+ res a))
+        ((even? b) (fast-mul (double a) (halve b) res))
+        (else
+         (fast-mul a (- b 1) (+ res a)))))
+
+
+(define (fib n)
+  (fib-iter 1 0 0 1 n))
+ 
+(define (fib-iter a b p q count)
+  (cond ((< count 1) b)
+        ((even? count)
+         (fib-iter a
+                   b
+                   (+ (square p) (square q))  ; p'
+                   (+ (* 2 p q)  (square q))  ; q'
+                   (/ count 2)))
+        (else (fib-iter (+ (* b q) (* a q) (* a p))
+                        (+ (* b p) (* a q))
+                        p
+                        q
+                        (- count 1)))))
+
+
+(fib 1)
+(fib 2)
+(fib 3)
+(fib 4)
+(fib 5)
+(fib 6)
+
+; gcd
+
+(define (gcd a b)
+  (if (< b 1)
+      a
+      (gcd b (remainder a b))))
+
+(gcd 11 121)
+
+(gcd 123 9)
+
+(gcd 123123 123)
+
+; fermat test
+
+(define (expmod base e m)
+  (cond ((= e 0) 1)
+    ((even? e)
+      (remainder (expmod base (/ e 2) m) m))
+    (else
+      (remainder (* base (expmod base (- e 1) m)) m))))
+
+(expmod 2 5 1)
+
+(expmod 2 11 11)
+
+(expmod 2 11 3)
+
+
+(define (fermat-test n)
+  (define (try-it a)
+    (= (expmod a n n) a))
+  (try-it (+ 1 (random (- n 1)))))
+
+(fermat-test 10)
+
+(define (compose f g)
+  (lambda (x) (f (g x))))
+
+(define (mul x y) (* x y))
+
+(mul 112 123)
+
+(define (inc x) (+ x 1))
+(inc 11)
+(square 11)
+
+(define func (compose square inc))
+
+func
+
+exit
+
+
+(define (repeat f n)
+  (define (repeat-n cur)
+  (if (= cur n)
+    f
+    (compose f (repeat-n (+ cur 1))))
+  (repeat-n 1)))
+
+((repeat square 2) 5)
+
+
+
+exit
+
+
+
+
+
+
+
+
+
 (define a (cons 1 2))
 
 (define a (cons 1 '()))
@@ -8,7 +152,7 @@
 a
 (define i (list 333 444))
 a
-exit
+
 
 (define a '(10 00))
 
@@ -21,7 +165,6 @@ exit
 		(else
 			(remainder (* base (expmod base (- exp 1) m)) m))))
 (expmod 2 10 11)
-exit
 
 
 (define (fermat-test n) 
@@ -32,8 +175,7 @@ exit
 (fermat-test 10)
 
 
-(define x 10)
-(define x 4)
+
 
 (define (fib n)
   (fib-iter 1 0 0 1 n))

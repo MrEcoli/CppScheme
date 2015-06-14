@@ -233,7 +233,6 @@ ExpAST* parseLambdaExp(std::istream& in, EnvTreeList current_env){
 	//								|			                                    |	
 	//		this function start from here;                               eat this brace
 
-	std::cout << "parseing lambda exp ................" << std::endl;
 	TOKEN _tok = get_token(in);
 	if (_tok != LBRACE_TOK){
 		std::cerr << "Invalid syntax, expect to be LBRACE \')\', line number " << current_line_number << std::endl;

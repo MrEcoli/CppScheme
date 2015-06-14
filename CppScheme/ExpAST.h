@@ -422,14 +422,20 @@ namespace CppScheme{
 			//??
 			for (size_t i = 0; i != args_number; ++i) {
 
-				if (VariableExp* ptr = dynamic_cast<VariableExp*>(parameters[i])){
-					(*localvariable)[proc->args[i]] = ptr->eval(env)->deep_copy();
+				if (parameters[i]->_exp_type == VARIABLE_TYPE){
+					VariableExp* ptr = (VariableExp*)parameters[i];
+					Object* _obj = ptr->eval(env);
+					if (!_obj)
+						return nullptr;
+					else{
+						(*localvariable)[proc->args[i]] = _obj->deep_copy();
+					}
 				}
 				else if (Object* p = (this->parameters)[i]->eval(env)){
 					(*localvariable)[proc->args[i]] = p;
 				}
 				else{
-					std::cerr << "Error in parameter eval" << std::endl;
+					Fout::error_out("Error in parameter eval\n");
 					return nullptr;
 				}
 			}
@@ -490,7 +496,7 @@ namespace CppScheme{
 		size_t n = conds.size();
 		size_t m = rets.size();
 		if (n != m || n == 0){
-			std::cerr << "Invalid CondExp conditons" << std::endl;
+			Fout::error_out("Invalid CondExp conditions\n");
 			return nullptr;
 		}
 		Object *final_result = nullptr;
@@ -498,9 +504,9 @@ namespace CppScheme{
 		for (size_t idx = 0; idx != n - 1; ++idx) {
 			if (eval_boolean(conds[idx], condBool, env)){
 				if (condBool){
-					std::cout << "true" << std::endl;
 					int expr_number = rets[idx].size();
 					if (expr_number == 0){
+						Fout::error_out("Error cond expression retur", "\n");
 						std::cout << "Error cond expression return" << std::endl;
 						return nullptr;
 					}
