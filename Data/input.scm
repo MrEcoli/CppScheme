@@ -1,7 +1,8 @@
 
+
+(define (sq n) (* n n))
 (define (even? n) (= (remainder n 2) 0))
 (define (odd? n) (= (remainder n 2) 1))
-(define (sq n) (* n n))
 
 (define square sq)
 
@@ -16,13 +17,6 @@
         (else (fast-pow b (- n 1) (* a b)))))
 
 (fast-pow 2 1 1)
-(fast-pow 2 2 1)
-(fast-pow 2 3 1)
-(fast-pow 2 4 1)
-(fast-pow 2 5 1)
-(fast-pow 2 6 1)
-(fast-pow 2 7 1)
-(fast-pow 2 8 1)
 (fast-pow 2 9 1)
 (fast-pow 2 10 1)
 (fast-pow 2 11 1)
@@ -119,17 +113,115 @@
 
 func
 
+(func 111)
+
+
+
+(define (gcd a b)
+  (if (= b 0)
+    a
+    (gcd b (remainder a b))))
+
+
+(define (sum term a nxt b)
+  (if (> a b)
+      0
+      (+ (term a) (sum term (nxt a) nxt b))))
+
+
+;integral function
+
+(define (integral f a b dx)
+  (define (integral-next x) ;
+    (+ x dx))
+  (* dx (sum f (+ a (/ dx 2.0)) integral-next b)))
+
+
+; ex 1.29
+
+(define (integral-simpson f a b n)
+  (define (h)
+    (/ (- b a) n))
+  (define (simpson-term a)
+    (+ (* 2 (f a)) (* 4 (f (a+h)))))
+  (define (simpson-next a)
+    (+ a (* 2 h)))
+  (* (+ (f a) (f b) (* 4 (f (+ a h))) (sum simpson-term (+ a (* 2 h)) simpson-next b) (/ h 3))))
+
+
+
+
+(define us-coins (list 50 25 10 5 1))
+(define uk-coins (list 100 50 20 10 5 2 1))
+
+(define a (list 1 2))
+
+(or (null? a) (> (car a) 0))
+
+
+(define (nomore coin) (null? coin))
+(define (except-first coin) (cdr coin))
+(define (fisrt-coin coin) (car coin))
+
+(define (cc amount coin-val)
+  (begin ;(display amount)
+    ;(newline)
+    ;(display coin-val)
+    ;(newline)
+  (cond ((= amount 0) 1)
+    ((or (< amount 0) (nomore coin-val)) 0)
+    (else
+      (+
+        (cc amount (except-first coin-val))
+        (cc (- amount (fisrt-coin coin-val)) coin-val))))))
+
+
+(cc 50 us-coins)
+;50
+
+(cc 40 us-coins)
+
+
+
+
+exit
+
+(null? (cdr a))
+(cdr a)
+(null? (cdr (cdr a)))
+(cdr (cdr a))
+
+(nomore a)
+a
+(nomore (fisrt-coin a))
+(fisrt-coin a)
+
+(except-first a)
+
+
+
+
+exit
+(define (cc amount coin)
+  (cond ((= amount 1) 1)
+    ((or (< amount 0) (null? coin)))))
+
+
 exit
 
 
-(define (repeat f n)
-  (define (repeat-n cur)
-  (if (= cur n)
-    f
-    (compose f (repeat-n (+ cur 1))))
-  (repeat-n 1)))
 
-((repeat square 2) 5)
+
+(define (cc amount coin-val)
+  (cond ((= amount 1) 1)
+    ((or (< amount 0) (nomore coin-val)) 0)
+    (else
+      (+
+        (cc amount (except-first coin-val))
+        (cc (- amount (fisrt-coin coin-val)) coin-val)))))
+
+(cc 100 us-coins)
+
 
 
 
