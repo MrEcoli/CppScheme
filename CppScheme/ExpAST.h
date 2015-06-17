@@ -379,7 +379,7 @@ namespace CppScheme{
 			cur_env = cur_env->next;
 		}
 
-		std::cerr << "couldn't find the variable " << var_name << std::endl;
+		std::cerr << "could n't find the variable " << var_name << std::endl;
 		return nullptr;
 	}
 
@@ -391,8 +391,7 @@ namespace CppScheme{
 		if (func->_exp_type == ExpAST_TYPE::VARIABLE_TYPE){
 			VariableExp* var = (VariableExp*)func;
 			auto iter = GlobalVariable->find(var->var_name);
-			if (iter != GlobalVariable->end()){
-				if (iter->second->obtype == ObjectType::BuiltIn_OBJ){
+			if (iter != GlobalVariable->end() && iter->second->obtype == ObjectType::BuiltIn_OBJ){
 					BuiltIn *_func = (BuiltIn*)(iter->second);
 					size_t n = parameters.size();
 					std::vector<Object*> args(n);
@@ -401,14 +400,29 @@ namespace CppScheme{
 						args[i] = tmp;
 					}
 					return (*_func)(args);
-				}
 			}
 		}
 
-		if (Procedure* proc = (Procedure*)(func->eval(env))){
+		Object* func_prototype = (func->eval(env));
+		
+		//如果是可调用对象, Procedure或是Closure
+		if (func_prototype && (func_prototype->obtype == ObjectType::PROCEDURE_OBJ || func_prototype->obtype == ObjectType::CLOSURE_OBJ)){
+			
+			Procedure* proc;
+
+			
+			if (func_prototype->obtype == ObjectType::CLOSURE_OBJ){
+				proc = ((Closure*)func_prototype)->proc;
+				EnvTreeList closure_env = ((Closure*)func_prototype)->env;
+				env = env.push_front(closure_env.head->ptr_to_tree);
+			}
+			else{
+				proc = (Procedure*)func_prototype;
+			}
+
 
 			if (proc->args.size() != parameters.size()){
-				std::cerr << "invalid procedure call, incompatible aguments number, expect aguments number" << proc->args.size() << ", give paramenters " << parameters.size() << std::endl;
+				Fout::error_out("invalid procedure call, incompatible aguments number, expect aguments number", proc->args.size(), ", given", parameters.size(), "parameters\n");
 				return nullptr;
 			}
 
@@ -416,12 +430,7 @@ namespace CppScheme{
 			EnvTree* localvariable = new EnvTree();
 			EnvTreeList local_env = env.push_front(localvariable);
 
-
-			size_t args_number = parameters.size();
-
-			//??
-			for (size_t i = 0; i != args_number; ++i) {
-
+			for (size_t i = 0; i != parameters.size(); ++i) {
 				if (parameters[i]->_exp_type == VARIABLE_TYPE){
 					VariableExp* ptr = (VariableExp*)parameters[i];
 					Object* _obj = ptr->eval(env);
@@ -440,19 +449,24 @@ namespace CppScheme{
 				}
 			}
 
-			int expr_number = proc->exprs.size();
 			Object* ret = nullptr;
 
-			for (int i = 0; i < expr_number; ++i) {
+			for (int i = 0; i < proc->exprs.size(); ++i) {
 				ret = proc->exprs[i]->eval(local_env);
 			}
 
-			local_env.clearLocal();
 
-			return ret;
+			if (ret && ret->obtype == ObjectType::PROCEDURE_OBJ){
+				Closure* closure_func = Closure::factory(local_env, (Procedure*)ret);
+				return closure_func;
+			}
+			else{
+				local_env.clearLocal();
+				return ret;
+			}
 		}
 		else{
-			std::cerr << "invalid procedure call" << std::endl;
+			Fout::error_out("Invalid procedure call\n");
 			return nullptr;
 		}
 	}
@@ -461,12 +475,11 @@ namespace CppScheme{
 
 	Object* DefineVariableExp::eval(EnvTreeList env){
 		Object* ret = this->_expr->eval(env);
-
 		if (ret){
 			(*env.head->ptr_to_tree)[this->_name] = ret;
 		}
 		else{
-			std::cerr << "Invalid expression in DefineVariableExp" << std::endl;
+			Fout::error_out("Invalid expression in DefineVariableExp\n");
 		}
 		return nullptr;
 	}

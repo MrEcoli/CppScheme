@@ -55,6 +55,7 @@ int print_eval_result(ExpAST* expr, EnvTreeList env){
 				break;
 			}
 			case ObjectType::BuiltIn_OBJ:
+			case ObjectType::CLOSURE_OBJ:
 			case ObjectType::PROCEDURE_OBJ:
 			{
 				if (expr->_exp_type == ExpAST_TYPE::VARIABLE_TYPE){
@@ -175,6 +176,7 @@ void init(EnvTree* env){
 	(*env)["integer?"] = new isInteger();
 	(*env)["eq?"] = new Equal_address();
 	(*env)["begin"] = new BeginExpr();
+	(*env)["null?"] = new IsNull();
 
 }
 
@@ -226,7 +228,7 @@ int main(){
 	auto ExpAST_pool_ptr = &ExpAST_pool;
 	auto Object_pool_ptr = &Object_pool;
 
-	std::ifstream file_in("E:\\BaiduDisk\\Code\\Compiler\\PGWT\\CppScheme\\Data\\input.txt");
+	std::ifstream file_in("E:\\BaiduDisk\\Code\\Compiler\\PGWT\\CppScheme\\Data\\input.scm");
 
 	mainloop(Env, file_in);
 	mainloop(Env, std::cin);

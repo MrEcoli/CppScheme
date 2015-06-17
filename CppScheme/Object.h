@@ -17,6 +17,7 @@ namespace CppScheme{
 
 	enum ObjectType{
 		PROCEDURE_OBJ = 1,	//Procedure Object
+		CLOSURE_OBJ,		//Closure Object
 		DOUBLE_OBJ,			//DoubleValue marker
 		INTEGER_OBJ,		//IntegerValue marker
 		STRING_OBJ,			//StringValue marker
@@ -256,7 +257,7 @@ namespace CppScheme{
 	public:
 		std::vector < std::string > args;
 		std::vector<ExpAST*> exprs;
-		Procedure() :Object(ObjectType::PROCEDURE_OBJ){}
+		Procedure(ObjectType _obj_type = PROCEDURE_OBJ) :Object(ObjectType::PROCEDURE_OBJ){}
 		virtual Object* deep_copy(){
 			Procedure* ret = Procedure::factory();
 			ret->args = this->args;
@@ -274,6 +275,34 @@ namespace CppScheme{
 		}
 		virtual std::string to_string(){
 			return std::string("#<procedure>");
+		}
+	};
+
+	class Closure :public Object{
+	public:
+		typedef std::map<std::string, Object*> EnvTree;
+		typedef slist<EnvTree> EnvTreeList;
+
+		EnvTreeList env;
+		Procedure* proc;
+		Closure(EnvTreeList _env_given, Procedure* _x, ObjectType _obj_type = ObjectType::CLOSURE_OBJ) :env(_env_given), proc(_x), Object(_obj_type){}
+
+		~Closure(){
+			env.clearLocal();
+		}
+		Closure* deep_copy(){
+			Closure *ret = Closure::factory(env, (Procedure*)(proc->deep_copy ()));
+			return ret;
+		}
+
+		virtual std::string to_string(){
+			return std::string("#<procedure>");
+		}
+
+		static Closure* factory(EnvTreeList _x, Procedure* _y){
+			Closure* ret = new Closure(_x, _y);
+			Object_pool[ret] = false;
+			return ret;
 		}
 	};
 

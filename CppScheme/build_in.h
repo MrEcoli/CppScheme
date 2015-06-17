@@ -165,11 +165,11 @@ namespace CppScheme{
 			}
 			//如果传递来的是临时变量，使用car后返回first
 
-			if (Pair* ptr = dynamic_cast<Pair*> (args[0])){
-				return ptr->first;
-			}
+
+			if (args[0]->obtype == ObjectType::PAIR_OBJ)
+				return ((Pair*)args[0])->first;
 			else{
-				std::cout << "illegal operator, not a Pair" << std::endl;
+				Fout::error_out("car illegal operator, not a Pair\n");
 				return nullptr;
 			}
 		}
@@ -187,11 +187,10 @@ namespace CppScheme{
 			//不能直接删除Pair
 			//需要删除Pair的第一个变量
 
-			if (Pair* ptr = dynamic_cast<Pair*> (args[0])){
-				return ptr->second;
-			}
+			if (args[0]->obtype == ObjectType::PAIR_OBJ)
+				return ((Pair*)args[0])->second;
 			else{
-				std::cout << "illegal operator, not a Pair" << std::endl;
+				Fout::error_out("cdr illegal operator, not a Pair\n");
 				return nullptr;
 			}
 		}
@@ -222,7 +221,7 @@ namespace CppScheme{
 		}
 	};
 
-
+	
 
 	class Add :public BuiltIn{
 	public:
@@ -569,20 +568,14 @@ namespace CppScheme{
 
 			bool cur_cond;
 			BoolValue* ret;
-			for (size_t idx = 0; idx != args.size(); ++idx) {
-				if (is_condition_true(args[idx], cur_cond)){
-					if (cur_cond){
-						ret = BoolValue::factory(true);
-					}
 
-				}
-				else{
-					Fout::error_out("Not valid condition expr\n");
-					ret = nullptr;
-				}
-			}
+			bool res = all_of(args.begin(), args.end(),
+				[](Object* _obj){ return _obj->obtype == ObjectType::BOOL_OBJ && !((BoolValue*)_obj)->value; });
 
-			return BoolValue::factory(false);
+			if (res)
+				return BoolValue::factory(false);
+			else
+				return BoolValue::factory(true);
 
 		}
 	};
@@ -711,6 +704,27 @@ namespace CppScheme{
 			else{
 				return BoolValue::factory(false);
 			}
+		}
+	};
+
+
+	class IsNull :public BuiltIn{
+		Object* operator()(std::vector<Object*>& args){
+			if (args.size () != 1){
+				Fout::error_out("null? error, expect one operand, given", args.size(), "\n");
+				return nullptr;
+			}
+
+			Object* cur = args[0];
+
+
+			if (cur && cur->obtype == NULL_OBJ){
+				return BoolValue::factory(true);
+			}
+			else{
+				return BoolValue::factory(false);
+			}
+
 		}
 	};
 

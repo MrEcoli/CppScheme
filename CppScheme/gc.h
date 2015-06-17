@@ -89,6 +89,24 @@ namespace CppScheme{
 			}
 			break;
 		}
+		case ObjectType::CLOSURE_OBJ:
+		{
+			Closure* closur_obj = (Closure*)cur_obj;
+			if (obj_visited.find (closur_obj->proc) == obj_visited.end ()){
+				dfs_object(closur_obj->proc, exp_visited, obj_visited);
+			}
+
+			EnvTree* closure_env = closur_obj->env.head->ptr_to_tree;
+
+			for (auto iter = closure_env->begin(); iter != closure_env->end(); ++iter){
+
+				Object* var = iter->second;
+				if (obj_visited.find (var) == obj_visited.end ()){
+					dfs_object(var, exp_visited, obj_visited);
+				}
+			}
+
+		}
 		default:
 		break;
 		}

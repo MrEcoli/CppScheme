@@ -237,7 +237,7 @@ static TOKEN get_token(std::istream &input){
 					++dot_number;
 				}
 
-				if (!isdigit(cur_char) && cur_char != '.'){
+				if (!isdigit(cur_char) && cur_char != '.'&&cur_char != '-'){
 					isNumber = false;
 				}
 				tmp += cur_char;
