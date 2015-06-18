@@ -221,6 +221,33 @@ namespace CppScheme{
 		}
 	};
 
+	class Append :public BuiltIn{
+	public:
+		Object* operator()(std::vector<Object*>& args){
+			if (args.size () != 2){
+				Fout::error_out("Append operater error, expect 2 arguments, given", args.size(), "\n");
+				return nullptr;
+			}
+
+			Object* prev = args[0];
+
+			while (prev->obtype == ObjectType::PAIR_OBJ) {
+				Pair* cur = (Pair*)prev;
+				if (cur->second->obtype == ObjectType::NULL_OBJ){
+					cur->second = args[1];
+					return args[0];
+				}
+				else if (cur->second->obtype == ObjectType::PAIR_OBJ){
+					prev = cur->second;
+				}
+				else
+					break;
+			}
+			Fout::error_out("Append expect a Pair object\n");
+			return nullptr;
+		}
+	};
+
 	
 
 	class Add :public BuiltIn{

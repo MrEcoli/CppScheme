@@ -318,7 +318,7 @@ bool parseCondExp(std::istream& in, EnvTreeList current_env, std::vector<ExpAST*
 
 
 	if (exp1 != nullptr || _tok != TOKEN::RBRACE_TOK){
-		std::cerr << "Cond expression syntax error" << std::endl;
+		Fout::error_out("Cond expression syntax error\n");
 		return false;
 	}
 
@@ -339,7 +339,7 @@ ExpAST* parseCallExp(std::istream& in, EnvTreeList current_env){
 	result->func = parseExpAst(in, current_env);
 
 	if (result->func == nullptr){
-		std::cerr << "invalid function call " << current_line_number << std::endl;
+		Fout::error_out("Invalid function call in ParseCallExp", current_line_number, "\n");
 		return nullptr;
 	}
 
@@ -377,7 +377,7 @@ ExpAST* parseLetExp(std::istream& in, EnvTreeList current_env){
 	result->func = proc;
 
 	if (current_tok != TOKEN::RBRACE_TOK){
-		std::cerr << "expect to be right brace, invalid let syntax " << current_line_number << std::endl;
+		Fout::error_out("Parse error in let expression, expect right brace at last\n");
 		return nullptr;
 	}
 
@@ -397,7 +397,7 @@ void parseLetArgs(std::istream& in, EnvTreeList current_env, std::vector<std::st
 	while (1) {
 		_tok = get_token(in);
 		if (_tok != TOKEN::LBRACE_TOK && _tok != TOKEN::RBRACE_TOK){
-			std::cerr << "expect to Left brace or right brace, invalid let syntax " << current_line_number << std::endl;
+			Fout::error_out("Parse error in parsing arguments of let expression", current_line_number, "\n");
 			return;
 		}
 		if (_tok == TOKEN::RBRACE_TOK){

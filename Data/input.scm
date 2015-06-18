@@ -1,10 +1,60 @@
 
 
+
 (define (sq n) (* n n))
 (define (even? n) (= (remainder n 2) 0))
 (define (odd? n) (= (remainder n 2) 1))
 
 (define square sq)
+
+;支持高阶函数
+(define (accumulate op initial sequence)
+    (if (null? sequence)
+        initial
+        (op (car sequence)
+            (accumulate op initial (cdr sequence)))))
+
+(define (map p sequence)
+    (accumulate (lambda (g h) (cons (p g) h)) '() sequence))
+
+;(map even? (list 1 2 3 4 5 6 7))
+;(map odd? (list 1 2 3 4 5 6 7))
+
+
+(define (flatmap proc seq)
+  (accumulate append '() (map proc seq)))
+
+(define (remove seq a)
+  (if (= (car seq) a)
+    (cdr seq)
+    (cons (car seq) (remove (cdr seq) a))))
+
+(define (permutations s)
+  (begin
+    ;(display s)
+    ;(newline)
+    (if (null? s)
+      (list '())
+      (flatmap 
+        (lambda (x)
+           ;(display x)
+           ;(newline)
+            (map 
+                (lambda (p) 
+                    ;(display x) 
+                    ;(newline) 
+                    (cons x p))
+                    (permutations (remove s x))))
+         s))))
+
+
+(permutations '(1 2 3))
+
+(length (permutations '(1 2 3)))
+
+;(flatmap (lambda (x) (cdr x)) (list (list 1 2 3) (list 3 4 5)))
+
+
 
 ; ex1.16
 (define (f x)
@@ -129,6 +179,37 @@ func
       (+ (term a) (sum term (nxt a) nxt b))))
 
 
+;支持高阶函数
+(define (accumulate op initial sequence)
+    (if (null? sequence)
+        initial
+        (op (car sequence)
+            (accumulate op initial (cdr sequence)))))
+
+(define (map p sequence)
+    (accumulate (lambda (x y) (cons (p x) y)) '() sequence))
+
+(define (flatmap proc seq)
+  (accumulate append `() (map proc seq)))
+
+(define (remove seq x)
+  (if (= (car seq) x)
+    (cdr seq)
+    (cons (car seq) (remove (cdr seq) x))))
+
+(define (permutations s)
+  (if (null? s)
+    (list `())
+    (flatmap (lambda (x)
+           (map (lambda (p) (cons x p))
+            (permutations (remove s x))))
+         s)))
+
+;(permutations '(1 2 3))
+
+
+
+
 ;integral function
 
 (define (integral f a b dx)
@@ -154,8 +235,7 @@ func
 (define us-coins (list 50 25 10 5 1))
 (define uk-coins (list 100 50 20 10 5 2 1))
 
-(define a (list 1 2))
-
+(define a (list 1 2 3))
 (or (null? a) (> (car a) 0))
 
 
@@ -180,82 +260,76 @@ func
 ;50
 
 (cc 40 us-coins)
+;31
+
+
+(define (filter proc seq)
+  (cond ((null? seq) '())
+        ((proc (car seq))
+         (cons (car seq) (filter proc (cdr seq))))
+        (else
+         (filter proc (cdr seq)))))
+
+
+
+(filter even? (list 1 2 3 4 5))
+
+;'(2 4)
+
+
+exit
+(define (enumerate-interval x y)
+    (if (> x y)
+        '()
+        (cons x (enumerate-interval (+ x 1) y))))
+(define (adjoin-position new-row k rest-of-queens)
+    (cons new-row rest-of-queens))
+
+(define (queens board-size)
+    (define (queen-cols k)
+        (if (= k 0)
+            (list '())
+            (filter
+                (lambda (positions) (safe? k positions))
+                (flatmap
+                    (lambda (rest-of-queens)
+                        (map (lambda (new-row)
+                            (adjoin-position new-row k rest-of-queens))
+                        (enumerate-interval 1 board-size)))
+                    (queen-cols (- k 1))))))
+    (queen-cols board-size))
+
+(define (safe? k positions)
+    (let ((val (car positions)))
+        (define (iter x others)
+            (cond ((null? others) #t)
+                ((or
+                    (= (car others) val)
+                    (= (abs (- x k)) (abs (- val (car others)))))
+                #f)
+                (else
+                    (iter (+ x 1) (cdr others)))))
+    (iter (+ k 1) (cdr positions))))
+
 
 
 
 
 exit
 
-(null? (cdr a))
-(cdr a)
-(null? (cdr (cdr a)))
-(cdr (cdr a))
-
-(nomore a)
-a
-(nomore (fisrt-coin a))
-(fisrt-coin a)
-
-(except-first a)
 
 
 
 
-exit
-(define (cc amount coin)
-  (cond ((= amount 1) 1)
-    ((or (< amount 0) (null? coin)))))
-
-
-exit
-
-
-
-
-(define (cc amount coin-val)
-  (cond ((= amount 1) 1)
-    ((or (< amount 0) (nomore coin-val)) 0)
-    (else
-      (+
-        (cc amount (except-first coin-val))
-        (cc (- amount (fisrt-coin coin-val)) coin-val)))))
-
-(cc 100 us-coins)
-
-
-
-
-exit
-
-
-
-
-
-
-
-
-
-(define a (cons 1 2))
-
-(define a (cons 1 '()))
-
-
-(define a (list 1 2 3 4 33 44 55 33 123 2 231  2 22 3 12 3))
-a
-(define i (list 333 444))
-a
-
-
-(define a '(10 00))
 
 
 
 (define (expmod base exp m)
-	(cond ((< exp 1) 1)
-		((even? exp)
-			(remainder (expmod base (/ exp 2) m) m))
-		(else
-			(remainder (* base (expmod base (- exp 1) m)) m))))
+    (cond ((< exp 1) 1)
+        ((even? exp)
+            (remainder (expmod base (/ exp 2) m) m))
+        (else
+            (remainder (* base (expmod base (- exp 1) m)) m))))
 (expmod 2 10 11)
 
 
@@ -290,4 +364,4 @@ a
 
 ;(define (f x) (define (g n) (+ n n)) (g x))
 
-;(define (f x) 	(cond ((< x 3) (display 3) (+ 3 3)) ((> x 10) (display 10) (+ 10 10)) (else (display x) (+ x x))))
+;(define (f x)  (cond ((< x 3) (display 3) (+ 3 3)) ((> x 10) (display 10) (+ 10 10)) (else (display x) (+ x x))))

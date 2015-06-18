@@ -6,6 +6,7 @@
 namespace CppScheme{
 	static void dfs_object(Object* cur_obj, std::unordered_set<ExpAST*> &exp_visited, std::unordered_set<Object*> &obj_visited);
 	static void dfs_expast(ExpAST* cur_expast, std::unordered_set<ExpAST*> &exp_visited, std::unordered_set<Object*> &obj_visited);
+
 	static void mark_sweep(){
 		std::unordered_set<ExpAST*> exp_visited;
 		std::unordered_set<Object*> obj_visited;
@@ -105,8 +106,19 @@ namespace CppScheme{
 					dfs_object(var, exp_visited, obj_visited);
 				}
 			}
-
+			break;
 		}
+		case ObjectType::VECTOR_OBJ:
+		{
+			VectorValue* vec_obj = (VectorValue*)cur_obj;
+			for (auto _x : vec_obj->vec) {
+				if (_x && obj_visited.find (_x) == obj_visited.end ()){
+					dfs_object(_x, exp_visited, obj_visited);
+				}
+			}
+			break;
+		}
+		
 		default:
 		break;
 		}
@@ -171,8 +183,8 @@ namespace CppScheme{
 					dfs_expast(exp, exp_visited, obj_visited);
 				}
 			}
+			break;
 		}
-		break;
 		case ExpAST_TYPE::DEFINEVARIABLE_TYPE:
 		{
 			DefineVariableExp* ptr = (DefineVariableExp*)cur_expast;
@@ -212,6 +224,27 @@ namespace CppScheme{
 
 			break;
 		}
+		case ExpAST_TYPE::VECTOR_EXP:
+		{
+			VectorExp* vec_exp = (VectorExp*)cur_expast;
+			for (auto _x : vec_exp->vecs) {
+				if (_x && exp_visited.find (_x) == exp_visited.end ()){
+					dfs_expast(_x, exp_visited, obj_visited);
+				}
+			}
+		}
+		
+		case ExpAST_TYPE::PAIR_EXP:
+		{
+			PairExp* pair_exp = (PairExp*)cur_expast;
+			if (pair_exp->first && exp_visited.find (pair_exp->first) == exp_visited.end ()){
+				dfs_expast(pair_exp->first, exp_visited, obj_visited);
+			}
+			if (pair_exp->second && exp_visited.find (pair_exp->second) == exp_visited.end ()){
+				dfs_expast(pair_exp->second, exp_visited, obj_visited);
+			}
+		}
+		
 		case ExpAST_TYPE::VARIABLE_TYPE:
 			break;
 		default:
@@ -220,7 +253,5 @@ namespace CppScheme{
 		}
 	}
 }
-
-
 
 #endif // _MINISCHEME_GARBAGE_COLLECTION_H

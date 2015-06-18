@@ -404,6 +404,18 @@ namespace CppScheme{
 		}
 
 		Object* func_prototype = (func->eval(env));
+
+		if (func_prototype->obtype == ObjectType::BuiltIn_OBJ){
+			BuiltIn *_func = (BuiltIn*)func_prototype;
+			size_t n = parameters.size();
+			std::vector<Object*> args(n);
+			for (size_t i = 0; i != n; ++i) {
+				args[i] = parameters[i]->eval(env);
+			}
+			return (*_func)(args);
+		}
+
+
 		
 		//如果是可调用对象, Procedure或是Closure
 		if (func_prototype && (func_prototype->obtype == ObjectType::PROCEDURE_OBJ || func_prototype->obtype == ObjectType::CLOSURE_OBJ)){
@@ -519,8 +531,7 @@ namespace CppScheme{
 				if (condBool){
 					int expr_number = rets[idx].size();
 					if (expr_number == 0){
-						Fout::error_out("Error cond expression retur", "\n");
-						std::cout << "Error cond expression return" << std::endl;
+						Fout::error_out("Error cond expression return", "\n");
 						return nullptr;
 					}
 
@@ -531,7 +542,7 @@ namespace CppScheme{
 				}
 			}
 			else{
-				std::cerr << "Invalid Cond Expression " << std::endl;
+				Fout::error_out("Error in parsing cond expression\n");
 				return nullptr;
 			}
 		}

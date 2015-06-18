@@ -177,6 +177,7 @@ void init(EnvTree* env){
 	(*env)["eq?"] = new Equal_address();
 	(*env)["begin"] = new BeginExpr();
 	(*env)["null?"] = new IsNull();
+	(*env)["append"] = new Append();
 
 }
 
@@ -211,7 +212,9 @@ void clear_env(){
 
 	for (auto iter = Object_pool.begin(); iter != Object_pool.end(); ++iter) {
 		auto ptr = iter->first;
-		delete ptr;
+		if (ptr->obtype != ObjectType::NULL_OBJ){
+			delete ptr;
+		}
 	}
 
 	Env.clearLocal();
@@ -228,9 +231,9 @@ int main(){
 	auto ExpAST_pool_ptr = &ExpAST_pool;
 	auto Object_pool_ptr = &Object_pool;
 
-	std::ifstream file_in("E:\\BaiduDisk\\Code\\Compiler\\PGWT\\CppScheme\\Data\\input.scm");
+	std::ifstream file_in("..\\Data\\input.scm");
 
-	mainloop(Env, file_in);
+	load_file(Env, file_in);
 	mainloop(Env, std::cin);
 
 
@@ -241,6 +244,6 @@ int main(){
 	cout << "ending construct" << endl;
 
 	
-	_CrtDumpMemoryLeaks();
+	//_CrtDumpMemoryLeaks();
 	return 0;
 }
